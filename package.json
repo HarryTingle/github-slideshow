@@ -1,0 +1,12 @@
+{
+  "name": "scope",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "dev": "npm run dev --workspace=@scope/web",
+    "build": "npm run build --workspace=@scope/engine && npm run build --workspace=@scope/web",
+    "test": "npm run test --workspace=@scope/engine",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

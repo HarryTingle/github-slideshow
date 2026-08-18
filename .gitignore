@@ -1,4 +1,8 @@
-_site/
-.sass-cache/
-.jekyll-metadata
-.bundle
+node_modules/
+.next/
+dist/
+out/
+*.tsbuildinfo
+.DS_Store
+.env*.local
+coverage/
