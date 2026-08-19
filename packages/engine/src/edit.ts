@@ -195,6 +195,11 @@ export function setAssignmentRole(
  * typing a name, which is how it happens in life. Clearing the name reopens the gap.
  * Renaming someone already on the engagement renames them everywhere, because it is
  * the same person.
+ *
+ * The name is stored exactly as typed. Trimming it here would defeat the caret: the
+ * field is controlled, so the space between a first name and a surname would be
+ * stripped the instant it was pressed and could never be typed. Emptiness is judged on
+ * the trimmed value; the stored value is the raw one, tidied on blur by the caller.
  */
 export function setPersonName(
   engagement: Engagement,
@@ -212,7 +217,7 @@ export function setPersonName(
     return normalise({
       ...engagement,
       people: engagement.people.map((person) =>
-        person.id === assignment.personId ? { ...person, name: trimmed } : person,
+        person.id === assignment.personId ? { ...person, name } : person,
       ),
     });
   }
@@ -223,7 +228,7 @@ export function setPersonName(
     ...engagement,
     people: [
       ...engagement.people,
-      { id, name: trimmed, gradeId: assignment.gradeId, roleId: assignment.roleId },
+      { id, name, gradeId: assignment.gradeId, roleId: assignment.roleId },
     ],
     assignments: engagement.assignments.map((candidate) =>
       candidate.id === assignmentId ? { ...candidate, personId: id } : candidate,

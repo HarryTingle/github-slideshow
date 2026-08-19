@@ -2,9 +2,13 @@
 
 The entities and the maths of delivery planning and resourcing. This is the specification the engine implements.
 
-> **Status: reasoned default, not evidence.** Written from first principles pending ingestion of the real Excel models and rate card (M0). Every structure here is provisional and must be reconciled against real artefacts before M1 code is written. Where a choice was made without evidence it is tagged `ASSUMPTION:`.
+> **Status: part evidence, mostly still reasoned.** The grade ladder and capability list
+> in §3 are the practice's real ones, given on 2026-08-19. Everything else — rates,
+> utilisation, the treatment of non-billable effort — remains written from first
+> principles pending the real Excel models and rate card (M0), and is tagged
+> `ASSUMPTION:` where a choice was made without evidence.
 
-Last updated: 2026-08-18
+Last updated: 2026-08-19
 
 ---
 
@@ -47,13 +51,50 @@ ASSUMPTION: weekly resolution is sufficient. Daily resolution matters if engagem
 
 Three distinct concepts that bespoke spreadsheets routinely conflate.
 
-- **Role** — *what the work needs.* Data Engineer, ML Engineer, Solution Architect, Delivery Lead, Business Analyst, Change Lead, Engagement Partner.
-- **Grade** — *seniority and therefore rate.* Analyst → Consultant → Senior Consultant → Managing Consultant → Principal → Director → Partner.
-- **Person** — *a named individual*, who has a home role, a grade, real availability and possibly a personal cost rate.
+- **Capability** — *what the work needs.* The practice's own list, below.
+- **Grade** — *seniority and therefore rate.* The practice's own ladder, below.
+- **Person** — *a named individual*, who has a home capability, a grade, real availability and possibly a personal cost rate.
+
+### The grade ladder
+
+**Source: given by Harry, 2026-08-19.** This is the practice's real ladder and is now the
+canonical list in `packages/engine/src/seed.ts`.
+
+| # | Grade |
+|---|---|
+| 1 | Associate |
+| 2 | Senior Associate |
+| 3 | Consultant |
+| 4 | Senior Consultant |
+| 5 | Manager |
+| 6 | Senior Manager |
+| 7 | Associate Director |
+| 8 | Director |
+
+### The capabilities
+
+**Source: given by Harry, 2026-08-19.**
+
+| Capability |
+|---|
+| Applied Data Intelligence |
+| AI (ML & Gen AI) |
+| Data & AI Product Management |
+| Data & AI Governance |
+| AI Business Partners |
+| Platform Engineering |
+
+**Confirmed by these two lists:** capability and grade are independent axes, not one
+ladder. A Platform Engineer can be an Associate or a Director. The earlier assumption to
+that effect is now evidence.
+
+**Still unknown:** every rate. The ladder tells us the shape of the rate card, not a
+single number in it. Nothing in the seeded data may be quoted.
 
 At bid stage a plan is normally **role + grade** placeholders. Named people are attached later, or partially, or never. **The model must be valid with zero named people.**
 
-ASSUMPTION: role and grade are independent axes (a Data Engineer can be a Consultant or a Principal). Some firms collapse them into a single ladder. Owner: Harry. Raised: 2026-08-18. → REVIEW Q6.
+~~ASSUMPTION: role and grade are independent axes.~~ **Confirmed 2026-08-19** — two
+separate lists were supplied, so the axes are independent..
 
 ### Rates
 

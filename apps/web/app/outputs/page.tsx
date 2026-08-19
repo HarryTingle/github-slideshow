@@ -281,13 +281,18 @@ function ClientView() {
   );
 }
 
+/**
+ * Internal grades collapsed into bands a client can read.
+ *
+ * The client is buying capability and seniority, not our ladder — and our ladder is
+ * exactly the sort of internal detail the client view exists not to expose.
+ */
 function seniorityBand(order: number): string {
-  if (order >= 6) return 'Partner / executive sponsorship';
-  if (order >= 5) return 'Principal specialists';
-  if (order >= 4) return 'Engagement leadership';
-  if (order >= 3) return 'Senior practitioners';
-  if (order >= 2) return 'Practitioners';
-  return 'Analysts';
+  if (order >= 7) return 'Director-level oversight';
+  if (order >= 5) return 'Engagement leadership';
+  if (order >= 4) return 'Senior practitioners';
+  if (order >= 3) return 'Practitioners';
+  return 'Associates';
 }
 
 function commercialSummary(label: string, hybrid: boolean): string {

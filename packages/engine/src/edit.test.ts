@@ -189,6 +189,23 @@ describe('naming people', () => {
     expect(computePlan(next).unstaffedEffortDays).toBeLessThan(before);
   });
 
+  it('keeps the space between a first name and a surname', () => {
+    // The field is controlled: what it shows is whatever was last stored. So this types
+    // one character at a time, feeding the stored value back in each round, exactly as
+    // the input does. Trimming on the way in strips the space the instant it is pressed
+    // and the surname can never be typed — the whole name arrives as "IanPayne".
+    let engagement = meridian;
+    const stored = () => {
+      const assignment = engagement.assignments.find((a) => a.id === 'a6')!;
+      if (!assignment.personId) return '';
+      return engagement.people.find((person) => person.id === assignment.personId)!.name;
+    };
+    for (const character of 'Ian Payne') {
+      engagement = setPersonName(engagement, 'a6', stored() + character);
+    }
+    expect(stored()).toBe('Ian Payne');
+  });
+
   it('reopens the gap when the name is cleared', () => {
     const staffed = setPersonName(meridian, 'a6', 'K. Adeyemi');
     const cleared = setPersonName(staffed, 'a6', '   ');
@@ -214,7 +231,7 @@ describe('naming people', () => {
 describe('changing a level', () => {
   it('moves cost and revenue together', () => {
     const before = computePlan(meridian);
-    const next = setAssignmentGrade(meridian, 'a6', 'g-principal');
+    const next = setAssignmentGrade(meridian, 'a6', 'g-associate-director');
     const after = computePlan(next);
     expect(after.directCost).toBeGreaterThan(before.directCost);
     expect(after.revenueAtStandardRates).toBeGreaterThan(before.revenueAtStandardRates);
@@ -223,10 +240,10 @@ describe('changing a level', () => {
 
   it('leaves a named person on their own cost rate', () => {
     // J. Moreau costs £470/day whatever grade he is booked at — his salary is his salary.
-    const next = setAssignmentGrade(meridian, 'a5', 'g-analyst');
+    const next = setAssignmentGrade(meridian, 'a5', 'g-associate');
     const line = computePlan(next).lines.find((l) => l.assignmentId === 'a5')!;
     expect(line.costRate).toBe(47000);
-    expect(line.chargeRate).toBe(54000);
+    expect(line.chargeRate).toBe(49500);
   });
 });
 

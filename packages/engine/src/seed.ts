@@ -2,36 +2,48 @@ import { pounds } from './money';
 import type { Engagement } from './types';
 
 /**
- * ⚠️ FICTIONAL DATA.
+ * ⚠️ MIXED: real taxonomy, invented numbers.
  *
- * Meridian Retail Group does not exist, and neither does the rate card below. This
- * engagement exists so the app can be seen working before real models are ingested
- * (M0 in ROADMAP.md). Every figure it produces is arithmetically correct and
- * commercially meaningless — do not quote any of it.
+ * The **grade ladder and the capability list are the practice's real ones** — they were
+ * given to us and are the structure the product must fit.
+ *
+ * **Every rate below is invented**, as is Meridian Retail Group and everything about
+ * this engagement. No cost rate, charge rate or contract value here came from a real
+ * rate card, and none of them may be quoted. They exist so the app can be seen working
+ * before real material is ingested (M0 in ROADMAP.md).
+ *
+ * Getting the taxonomy right and the rates wrong is the safer half to have: the shape
+ * of the model is now correct, and the numbers are visibly placeholder.
+ *
+ * ASSUMPTION: rates rise monotonically with grade and the spread between cost and
+ * charge widens with seniority — owner: Harry, raised: 2026-08-19. Replace wholesale
+ * with the real rate card; do not adjust these towards it.
  *
  * Shape chosen to be representative rather than convenient: three phases, five
- * workstreams, six grades, part-time and ramped people, two deliberate resourcing
- * gaps, and a public holiday in the middle of the build.
+ * workstreams, part-time and ramped people, three deliberate resourcing gaps, and a
+ * public holiday in the middle of the build.
  */
 
+/** The practice's grade ladder. Names are real; every rate is a placeholder. */
 const GRADES = [
-  { id: 'g-analyst', name: 'Analyst', order: 1, costRate: pounds(215), chargeRate: pounds(540) },
-  { id: 'g-consultant', name: 'Consultant', order: 2, costRate: pounds(310), chargeRate: pounds(760) },
-  { id: 'g-senior', name: 'Senior Consultant', order: 3, costRate: pounds(450), chargeRate: pounds(950) },
-  { id: 'g-managing', name: 'Managing Consultant', order: 4, costRate: pounds(580), chargeRate: pounds(1180) },
-  { id: 'g-principal', name: 'Principal', order: 5, costRate: pounds(720), chargeRate: pounds(1450) },
-  { id: 'g-partner', name: 'Partner', order: 6, costRate: pounds(980), chargeRate: pounds(1950) },
+  { id: 'g-associate', name: 'Associate', order: 1, costRate: pounds(195), chargeRate: pounds(495) },
+  { id: 'g-senior-associate', name: 'Senior Associate', order: 2, costRate: pounds(260), chargeRate: pounds(620) },
+  { id: 'g-consultant', name: 'Consultant', order: 3, costRate: pounds(330), chargeRate: pounds(780) },
+  { id: 'g-senior-consultant', name: 'Senior Consultant', order: 4, costRate: pounds(430), chargeRate: pounds(950) },
+  { id: 'g-manager', name: 'Manager', order: 5, costRate: pounds(530), chargeRate: pounds(1120) },
+  { id: 'g-senior-manager', name: 'Senior Manager', order: 6, costRate: pounds(640), chargeRate: pounds(1330) },
+  { id: 'g-associate-director', name: 'Associate Director', order: 7, costRate: pounds(780), chargeRate: pounds(1560) },
+  { id: 'g-director', name: 'Director', order: 8, costRate: pounds(950), chargeRate: pounds(1900) },
 ];
 
+/** The practice's capabilities. A capability is what someone does; a grade is how senior they are. */
 const ROLES = [
-  { id: 'r-partner', name: 'Engagement Partner' },
-  { id: 'r-lead', name: 'Delivery Lead' },
-  { id: 'r-architect', name: 'Solution Architect' },
-  { id: 'r-de', name: 'Data Engineer' },
-  { id: 'r-ml', name: 'ML Engineer' },
-  { id: 'r-ae', name: 'Analytics Engineer' },
-  { id: 'r-ba', name: 'Business Analyst' },
-  { id: 'r-change', name: 'Change Lead' },
+  { id: 'c-adi', name: 'Applied Data Intelligence' },
+  { id: 'c-ai', name: 'AI (ML & Gen AI)' },
+  { id: 'c-product', name: 'Data & AI Product Management' },
+  { id: 'c-governance', name: 'Data & AI Governance' },
+  { id: 'c-partners', name: 'AI Business Partners' },
+  { id: 'c-platform', name: 'Platform Engineering' },
 ];
 
 export const meridian: Engagement = {
@@ -49,21 +61,21 @@ export const meridian: Engagement = {
   grades: GRADES,
   roles: ROLES,
   people: [
-    { id: 'p-lindqvist', name: 'M. Lindqvist', gradeId: 'g-partner', roleId: 'r-partner' },
-    { id: 'p-osei', name: 'T. Osei', gradeId: 'g-managing', roleId: 'r-lead' },
+    { id: 'p-lindqvist', name: 'M. Lindqvist', gradeId: 'g-director', roleId: 'c-partners' },
+    { id: 'p-osei', name: 'T. Osei', gradeId: 'g-senior-manager', roleId: 'c-product' },
     {
       id: 'p-whitfield',
       name: 'A. Whitfield',
-      gradeId: 'g-principal',
-      roleId: 'r-architect',
+      gradeId: 'g-associate-director',
+      roleId: 'c-platform',
       // Two weeks of leave in the middle of the build — visible in the grid.
       leave: { 9: 5, 10: 5 },
     },
-    { id: 'p-moreau', name: 'J. Moreau', gradeId: 'g-senior', roleId: 'r-de', costRate: pounds(470) },
-    { id: 'p-bello', name: 'S. Bello', gradeId: 'g-consultant', roleId: 'r-ae' },
-    { id: 'p-ferreira', name: 'D. Ferreira', gradeId: 'g-senior', roleId: 'r-ml' },
-    { id: 'p-nakamura', name: 'P. Nakamura', gradeId: 'g-senior', roleId: 'r-change' },
-    { id: 'p-kaur', name: 'R. Kaur', gradeId: 'g-consultant', roleId: 'r-ba', leave: { 12: 2 } },
+    { id: 'p-moreau', name: 'J. Moreau', gradeId: 'g-senior-consultant', roleId: 'c-platform', costRate: pounds(470) },
+    { id: 'p-bello', name: 'S. Bello', gradeId: 'g-consultant', roleId: 'c-adi' },
+    { id: 'p-ferreira', name: 'D. Ferreira', gradeId: 'g-senior-consultant', roleId: 'c-ai' },
+    { id: 'p-nakamura', name: 'P. Nakamura', gradeId: 'g-manager', roleId: 'c-partners' },
+    { id: 'p-kaur', name: 'R. Kaur', gradeId: 'g-consultant', roleId: 'c-adi', leave: { 12: 2 } },
   ],
   phases: [
     { id: 'ph-discovery', name: 'Discovery', order: 1, startWeek: 1, endWeek: 3 },
@@ -84,31 +96,31 @@ export const meridian: Engagement = {
   ],
   assignments: [
     // Discovery
-    { id: 'a1', workstreamId: 'ws-discovery', roleId: 'r-architect', gradeId: 'g-principal', personId: 'p-whitfield', startWeek: 1, endWeek: 3, allocation: 0.6 },
-    { id: 'a2', workstreamId: 'ws-discovery', roleId: 'r-ba', gradeId: 'g-consultant', personId: 'p-kaur', startWeek: 1, endWeek: 3, allocation: 1 },
-    { id: 'a3', workstreamId: 'ws-discovery', roleId: 'r-lead', gradeId: 'g-managing', personId: 'p-osei', startWeek: 1, endWeek: 3, allocation: 0.4 },
-    { id: 'a4', workstreamId: 'ws-discovery', roleId: 'r-partner', gradeId: 'g-partner', personId: 'p-lindqvist', startWeek: 1, endWeek: 3, allocation: 0.1 },
+    { id: 'a1', workstreamId: 'ws-discovery', roleId: 'c-platform', gradeId: 'g-associate-director', personId: 'p-whitfield', startWeek: 1, endWeek: 3, allocation: 0.6 },
+    { id: 'a2', workstreamId: 'ws-discovery', roleId: 'c-adi', gradeId: 'g-consultant', personId: 'p-kaur', startWeek: 1, endWeek: 3, allocation: 1 },
+    { id: 'a3', workstreamId: 'ws-discovery', roleId: 'c-product', gradeId: 'g-senior-manager', personId: 'p-osei', startWeek: 1, endWeek: 3, allocation: 0.4 },
+    { id: 'a4', workstreamId: 'ws-discovery', roleId: 'c-partners', gradeId: 'g-director', personId: 'p-lindqvist', startWeek: 1, endWeek: 3, allocation: 0.1 },
 
     // Build — Data Platform
-    { id: 'a5', workstreamId: 'ws-platform', roleId: 'r-de', gradeId: 'g-senior', personId: 'p-moreau', startWeek: 4, endWeek: 11, allocation: 1 },
-    { id: 'a6', workstreamId: 'ws-platform', roleId: 'r-de', gradeId: 'g-consultant', startWeek: 4, endWeek: 11, allocation: 1, rampWeeks: 2 },
-    { id: 'a7', workstreamId: 'ws-platform', roleId: 'r-ae', gradeId: 'g-consultant', personId: 'p-bello', startWeek: 4, endWeek: 11, allocation: 0.8, rampWeeks: 2 },
-    { id: 'a8', workstreamId: 'ws-platform', roleId: 'r-architect', gradeId: 'g-principal', personId: 'p-whitfield', startWeek: 4, endWeek: 11, allocation: 0.3 },
+    { id: 'a5', workstreamId: 'ws-platform', roleId: 'c-platform', gradeId: 'g-senior-consultant', personId: 'p-moreau', startWeek: 4, endWeek: 11, allocation: 1 },
+    { id: 'a6', workstreamId: 'ws-platform', roleId: 'c-platform', gradeId: 'g-consultant', startWeek: 4, endWeek: 11, allocation: 1, rampWeeks: 2 },
+    { id: 'a7', workstreamId: 'ws-platform', roleId: 'c-adi', gradeId: 'g-consultant', personId: 'p-bello', startWeek: 4, endWeek: 11, allocation: 0.8, rampWeeks: 2 },
+    { id: 'a8', workstreamId: 'ws-platform', roleId: 'c-platform', gradeId: 'g-associate-director', personId: 'p-whitfield', startWeek: 4, endWeek: 11, allocation: 0.3 },
 
     // Build — Forecasting
-    { id: 'a9', workstreamId: 'ws-forecast', roleId: 'r-ml', gradeId: 'g-senior', personId: 'p-ferreira', startWeek: 5, endWeek: 11, allocation: 1, rampWeeks: 2 },
-    { id: 'a10', workstreamId: 'ws-forecast', roleId: 'r-ml', gradeId: 'g-consultant', startWeek: 6, endWeek: 11, allocation: 0.8 },
-    { id: 'a11', workstreamId: 'ws-forecast', roleId: 'r-ba', gradeId: 'g-analyst', startWeek: 6, endWeek: 11, allocation: 0.5 },
+    { id: 'a9', workstreamId: 'ws-forecast', roleId: 'c-ai', gradeId: 'g-senior-consultant', personId: 'p-ferreira', startWeek: 5, endWeek: 11, allocation: 1, rampWeeks: 2 },
+    { id: 'a10', workstreamId: 'ws-forecast', roleId: 'c-ai', gradeId: 'g-consultant', startWeek: 6, endWeek: 11, allocation: 0.8 },
+    { id: 'a11', workstreamId: 'ws-forecast', roleId: 'c-governance', gradeId: 'g-senior-associate', startWeek: 6, endWeek: 11, allocation: 0.5 },
 
     // Build — Change
-    { id: 'a12', workstreamId: 'ws-change', roleId: 'r-change', gradeId: 'g-senior', personId: 'p-nakamura', startWeek: 4, endWeek: 11, allocation: 0.5 },
-    { id: 'a13', workstreamId: 'ws-change', roleId: 'r-lead', gradeId: 'g-managing', personId: 'p-osei', startWeek: 4, endWeek: 11, allocation: 0.5 },
+    { id: 'a12', workstreamId: 'ws-change', roleId: 'c-partners', gradeId: 'g-manager', personId: 'p-nakamura', startWeek: 4, endWeek: 11, allocation: 0.5 },
+    { id: 'a13', workstreamId: 'ws-change', roleId: 'c-product', gradeId: 'g-senior-manager', personId: 'p-osei', startWeek: 4, endWeek: 11, allocation: 0.5 },
 
     // Deploy
-    { id: 'a14', workstreamId: 'ws-deploy', roleId: 'r-lead', gradeId: 'g-managing', personId: 'p-osei', startWeek: 12, endWeek: 14, allocation: 0.5 },
-    { id: 'a15', workstreamId: 'ws-deploy', roleId: 'r-de', gradeId: 'g-senior', personId: 'p-moreau', startWeek: 12, endWeek: 14, allocation: 0.6 },
-    { id: 'a16', workstreamId: 'ws-deploy', roleId: 'r-ae', gradeId: 'g-consultant', personId: 'p-bello', startWeek: 12, endWeek: 14, allocation: 0.5 },
-    { id: 'a17', workstreamId: 'ws-deploy', roleId: 'r-change', gradeId: 'g-senior', personId: 'p-nakamura', startWeek: 12, endWeek: 14, allocation: 0.6 },
+    { id: 'a14', workstreamId: 'ws-deploy', roleId: 'c-product', gradeId: 'g-senior-manager', personId: 'p-osei', startWeek: 12, endWeek: 14, allocation: 0.5 },
+    { id: 'a15', workstreamId: 'ws-deploy', roleId: 'c-platform', gradeId: 'g-senior-consultant', personId: 'p-moreau', startWeek: 12, endWeek: 14, allocation: 0.6 },
+    { id: 'a16', workstreamId: 'ws-deploy', roleId: 'c-adi', gradeId: 'g-consultant', personId: 'p-bello', startWeek: 12, endWeek: 14, allocation: 0.5 },
+    { id: 'a17', workstreamId: 'ws-deploy', roleId: 'c-partners', gradeId: 'g-manager', personId: 'p-nakamura', startWeek: 12, endWeek: 14, allocation: 0.6 },
   ],
   rateCards: [
     {
@@ -116,10 +128,11 @@ export const meridian: Engagement = {
       name: 'Meridian framework rates',
       // Negotiated framework rates — roughly 6% off standard at the senior end.
       rates: {
-        'g-consultant': pounds(720),
-        'g-senior': pounds(890),
-        'g-managing': pounds(1110),
-        'g-principal': pounds(1360),
+        'g-consultant': pounds(740),
+        'g-senior-consultant': pounds(890),
+        'g-manager': pounds(1050),
+        'g-senior-manager': pounds(1250),
+        'g-associate-director': pounds(1465),
       },
     },
   ],
@@ -136,7 +149,7 @@ export const meridian: Engagement = {
     {
       id: 'sc-fixed',
       name: 'Fixed price',
-      structure: { type: 'fixedPrice', contractValue: pounds(232000), contingencyPct: 0.15 },
+      structure: { type: 'fixedPrice', contractValue: pounds(252000), contingencyPct: 0.15 },
       notes: 'Single price for the agreed scope, 15% contingency held against overrun.',
     },
     {
@@ -144,22 +157,22 @@ export const meridian: Engagement = {
       name: 'Fixed + outcome share',
       structure: {
         type: 'outcomeShare',
-        baseFee: pounds(185000),
+        baseFee: pounds(200000),
         shape: 'benefitPct',
         sharePercent: 0.1,
-        expectedBenefit: pounds(620000),
-        cap: pounds(280000),
+        expectedBenefit: pounds(580000),
+        cap: pounds(290000),
         contingencyPct: 0.15,
       },
-      notes: 'Lower base, 10% of measured forecasting benefit in year one, capped at £280k.',
+      notes: 'Lower base, 10% of measured forecasting benefit in year one, capped at £290k.',
     },
     {
       id: 'sc-hybrid',
       name: 'Hybrid — fixed discovery, T&M build',
       structure: { type: 'tm', rateCardId: 'rc-meridian' },
       structureByPhase: {
-        'ph-discovery': { type: 'fixedPrice', contractValue: pounds(34000), contingencyPct: 0.1 },
-        'ph-deploy': { type: 'fixedPrice', contractValue: pounds(29000), contingencyPct: 0.1 },
+        'ph-discovery': { type: 'fixedPrice', contractValue: pounds(37000), contingencyPct: 0.1 },
+        'ph-deploy': { type: 'fixedPrice', contractValue: pounds(31000), contingencyPct: 0.1 },
       },
       notes: 'Fixed price either end, T&M through the build where the scope is least certain.',
     },

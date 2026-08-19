@@ -182,6 +182,14 @@ export function AllocationGrid() {
                                             setPersonName(draft, assignment.id, event.target.value),
                                           )
                                         }
+                                        // Tidied on the way out, never while typing —
+                                        // trimming on each keystroke eats the space
+                                        // between a first name and a surname.
+                                        onBlur={(event) =>
+                                          update((draft) =>
+                                            setPersonName(draft, assignment.id, event.target.value.trim()),
+                                          )
+                                        }
                                       />
                                     </span>
                                     <button

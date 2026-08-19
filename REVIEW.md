@@ -47,6 +47,19 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-19 — First real domain input, and a bug that made the product unusable
+**Reviewed:** the grade ladder and capability list supplied by Harry, now in `context/domain-model.md` §3 and the seed; and a reported bug in the consultant name field.
+
+**The bug.** You could not type a space between a first name and a surname. `setPersonName` trimmed on every keystroke, and because the field is controlled, the space was stripped the instant it was pressed — "Ian Payne" arrived as "IanPayne". The name is now stored exactly as typed and tidied on blur instead.
+
+Worth recording *how* it was nearly missed: the first regression test I wrote fed whole strings in and passed against the broken code as well as the fixed code. A test that passes before and after the fix proves nothing. The real test types one character at a time and feeds the stored value back in each round, exactly as a controlled input does — and it fails with `IanPayne` against the old behaviour, which was verified by reintroducing the trim.
+
+**The taxonomy.** Eight grades (Associate → Director) and six capabilities. This confirms an assumption that had been sitting in the domain model since day one: capability and grade are independent axes, not a single ladder.
+
+**The risk this creates.** The seed now carries a *real* structure and *invented* rates. A model that is right about the shape and wrong about the numbers is more persuasive than one that is obviously fake, so the "fictional data" marker is doing more work than it was yesterday. Recorded in `CLAUDE.md`: the rate card must be replaced wholesale when the real one arrives, never adjusted towards it.
+
+**Also:** scenario prices were re-set against the new cost base so the demo still tells the truth — outcome share remains the only scenario that breaches a guardrail, and it breaches on the downside case, which is the point.
+
 ### 2026-08-19 — The allocation grid became an editor
 **Reviewed:** `packages/engine/src/edit.ts` (31 new tests) and the rewritten allocation grid.
 
@@ -119,6 +132,7 @@ Live list. Move to *Resolved* with the answer and the date — do not delete.
 | Q0 | Is this repo workspace-only or workspace + app code? | Workspace and application code live together here. | 2026-08-18 |
 | Q0a | Internal tool or commercial product first? | Internal first, then productise. We are customer zero. | 2026-08-18 |
 | Q0b | What anchors milestone one? | A correct, tested modelling engine. | 2026-08-18 |
+| Q6a | Are capability and grade independent axes, or one ladder? | Independent. Two separate lists supplied, 8 grades × 6 capabilities. | 2026-08-19 |
 
 ---
 
