@@ -2,12 +2,12 @@ import { WEEKS_PER_YEAR, activeWeeks, availableDays, leaveProvision, rampFactor 
 import { multiplyRate, ratio } from './money';
 import type {
   Assignment,
+  Scenario,
   Days,
   Engagement,
   Grade,
   Money,
   Person,
-  RateCard,
   WeekIndex,
 } from './types';
 
@@ -77,11 +77,25 @@ export function costRateFor(
 export function chargeRateFor(
   assignment: Assignment,
   grades: Map<string, Grade>,
-  rateCard?: RateCard,
+  billedRates?: Record<string, Money>,
 ): Money {
-  const override = rateCard?.rates[assignment.gradeId];
-  if (override != null) return override;
+  const billed = billedRates?.[assignment.gradeId];
+  if (billed != null) return billed;
   return grades.get(assignment.gradeId)?.chargeRate ?? 0;
+}
+
+/**
+ * What we will bill, by grade: the scenario's own rates over the client card over the
+ * practice standard. Resolving it in one place keeps "which rate is this?" answerable.
+ */
+export function billedRatesFor(engagement: Engagement, scenario: Scenario): Record<string, Money> {
+  const structures = [scenario.structure, ...Object.values(scenario.structureByPhase ?? {})];
+  const cardId = structures.find((s) => 'rateCardId' in s && s.rateCardId);
+  const card =
+    cardId && 'rateCardId' in cardId
+      ? engagement.rateCards.find((candidate) => candidate.id === cardId.rateCardId)
+      : undefined;
+  return { ...(card?.rates ?? {}), ...(scenario.rateOverrides ?? {}) };
 }
 
 /**
@@ -89,13 +103,13 @@ export function chargeRateFor(
  *
  * Pure: no I/O, no dates, no framework, no mutation of the input.
  */
-export function computePlan(engagement: Engagement, rateCardId?: string): ComputedPlan {
+export function computePlan(
+  engagement: Engagement,
+  billedRates?: Record<string, Money>,
+): ComputedPlan {
   const grades = indexBy(engagement.grades);
   const people = indexBy(engagement.people);
   const workstreams = indexBy(engagement.workstreams);
-  const rateCard = rateCardId
-    ? engagement.rateCards.find((card) => card.id === rateCardId)
-    : undefined;
 
   // Annual leave is granted per person-year, so it has to be pro-rated against the
   // weeks each capacity holder is actually on this engagement before any line is
@@ -146,7 +160,7 @@ export function computePlan(engagement: Engagement, rateCardId?: string): Comput
 
     const person = assignment.personId ? people.get(assignment.personId) : undefined;
     const costRate = costRateFor(assignment, grades, people);
-    const chargeRate = chargeRateFor(assignment, grades, rateCard);
+    const chargeRate = chargeRateFor(assignment, grades, billedRates);
     const standardRate = grades.get(assignment.gradeId)?.chargeRate ?? 0;
 
     const holderProvision = provisionByHolder.get(assignment.personId ?? `unstaffed:${assignment.id}`) ?? 0;

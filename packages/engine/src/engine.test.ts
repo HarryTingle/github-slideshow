@@ -297,7 +297,7 @@ describe('rate resolution', () => {
   it('lets a client rate card override the charge rate, but never the cost rate', () => {
     const engagement = workedExample();
     engagement.rateCards = [{ id: 'rc', name: 'Client', rates: { g: pounds(880) } }];
-    const plan = computePlan(engagement, 'rc');
+    const plan = computePlan(engagement, { g: pounds(880) });
     expect(plan.revenueAtRates).toBe(toMoney(pounds(880) * 11.4));
     expect(plan.directCost).toBe(513000);
   });

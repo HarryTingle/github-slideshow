@@ -36,3 +36,4 @@ What we rejected and why.
 | 0001 | Record decisions | Accepted | 2026-08-18 |
 | 0002 | Stack and architecture | Accepted | 2026-08-19 |
 | 0003 | Internal first, then productise | Accepted | 2026-08-18 |
+| 0004 | Price by leverage, not by nudging | Accepted | 2026-08-19 |

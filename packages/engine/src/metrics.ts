@@ -1,7 +1,7 @@
 import { cashCurve, computeScenario, maxCashExposure, sliceOf, type ScenarioResult } from './commercial';
-import { burnCurve, computePlan, gradeMix, type ComputedPlan } from './compute';
+import { billedRatesFor, burnCurve, computePlan, gradeMix, type ComputedPlan } from './compute';
 import { ratio } from './money';
-import type { Engagement, Guardrail, Money, Scenario, WeekIndex } from './types';
+import type { Engagement, Guardrail, Money, WeekIndex } from './types';
 
 /** The numbers a Head of Commercial actually looks at. `context/domain-model.md` §8. */
 export interface Metrics {
@@ -138,15 +138,6 @@ export function computeMetrics(
   };
 }
 
-/** The rate card a scenario bills at, if its structure names one. */
-function rateCardOf(scenario: Scenario): string | undefined {
-  const structures = [scenario.structure, ...Object.values(scenario.structureByPhase ?? {})];
-  for (const structure of structures) {
-    if ('rateCardId' in structure && structure.rateCardId) return structure.rateCardId;
-  }
-  return undefined;
-}
-
 /**
  * One call, everything the app needs. The app never does arithmetic itself.
  *
@@ -157,19 +148,22 @@ export function analyse(engagement: Engagement): EngagementAnalysis {
   const basePlan = computePlan(engagement);
   const lag = engagement.paymentTermsWeeks ?? 0;
 
-  const plansByRateCard = new Map<string, ComputedPlan>();
-  const planFor = (rateCardId?: string): ComputedPlan => {
-    if (!rateCardId) return basePlan;
-    let plan = plansByRateCard.get(rateCardId);
+  // Effort and cost are identical across scenarios by construction — the delivery plan
+  // is untouched. Only the rates being billed vary, so plans are cached by those.
+  const plansByRates = new Map<string, ComputedPlan>();
+  const planFor = (billedRates: Record<string, Money>): ComputedPlan => {
+    const key = JSON.stringify(Object.entries(billedRates).sort());
+    if (key === '[]') return basePlan;
+    let plan = plansByRates.get(key);
     if (!plan) {
-      plan = computePlan(engagement, rateCardId);
-      plansByRateCard.set(rateCardId, plan);
+      plan = computePlan(engagement, billedRates);
+      plansByRates.set(key, plan);
     }
     return plan;
   };
 
   const scenarios = engagement.scenarios.map((definition) => {
-    const plan = planFor(rateCardOf(definition));
+    const plan = planFor(billedRatesFor(engagement, definition));
     const scenario = computeScenario(engagement, plan, definition);
     const metrics = computeMetrics(engagement, plan, scenario);
     return {

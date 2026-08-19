@@ -300,6 +300,15 @@ export interface ScenarioResult {
   upside: CaseResult | null;
   breakEvenOverrunPct: number | null;
   isHybrid: boolean;
+  /**
+   * Whether revenue moves when the plan or the rates move.
+   *
+   * True under time and materials, false once a price is fixed. It is the single most
+   * important fact about a deal when you are pricing it: under T&M a rate change is the
+   * lever, under fixed price a rate change does nothing at all and the only levers left
+   * are the price itself and the shape of the team.
+   */
+  revenueFollowsEffort: boolean;
   notes: string[];
 }
 
@@ -396,6 +405,9 @@ export function computeScenario(
     breakEvenOverrunPct: parts.every((part) => part.structure.breakEvenOverrunPct == null)
       ? null
       : ratio(downsideRevenue + rechargeable - cost, cost),
+    revenueFollowsEffort: parts.every(
+      (part) => part.structure.label === 'Time & materials' || part.structure.capHeadroomPct != null,
+    ),
     isHybrid,
     notes: parts.flatMap((part) =>
       part.structure.notes.map((note) => (parts.length > 1 ? `${part.label}: ${note}` : note)),

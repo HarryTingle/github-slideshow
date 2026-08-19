@@ -145,6 +145,14 @@ export interface Scenario {
    * retained hypercare — so this is a first-class feature, not an edge case.
    */
   structureByPhase?: Record<string, CommercialStructure>;
+  /**
+   * The rates we will actually bill on this deal, by grade.
+   *
+   * Layered over the client rate card, which is layered over the practice standard.
+   * Pricing a bid means moving *this* number — the standard card is a reference point
+   * you are measured against, not a thing you edit per deal.
+   */
+  rateOverrides?: Record<string, Money>;
   notes?: string;
 }
 

@@ -47,6 +47,23 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-19 — A pricing desk, designed against the tool it replaces
+**Reviewed:** `packages/engine/src/pricing.ts` and the pricing desk on the Commercials page. Decision recorded as `context/decisions/0004-pricing-levers.md`.
+
+**Where it came from.** Harry shared the pricing screen from the tool he built before this, liked being able to fine-tune towards a margin, and said he did not think it was the best way to do it. Reading it carefully was worth more than any amount of speculation: it showed what to keep (one screen, margin always visible, per-row margin, price as a lump sum *or* a percentage of build-up, blended vs standard) and four specific things that cost time — the same grade rate edited once per row, no indication of which lever is worth pulling, no goal-seek, and annual leave sitting next to price as if it were a commercial control.
+
+**The one I pushed back on.** Leave is a fact about capacity. Editing it to reach a margin does not improve the deal; it makes the plan wrong, in the direction of under-resourcing, which surfaces months later as an overrun. It stays on the delivery plan. Worth saying plainly rather than quietly not building it.
+
+**What the leverage columns turned up**, which is the part I did not expect to be so stark:
+- Under T&M the leverage follows *volume*, not rate. +£25 a day on Consultant is worth +0.62pp; the same £25 on Director is worth +0.01pp. Sixty times the effect for the same concession, and nothing in a rate card tells you that.
+- Under a fixed price every rate lever is worth exactly zero, and the desk says so rather than letting someone spend ten minutes finding out.
+- Under a fixed price the lever moves to team shape, concentrated at the top: a week moved from Associate Director down a rung is +1.12pp against +0.22pp at Consultant.
+- Trading down is not always right — Senior Manager → Manager is −0.12pp at framework rates, because Senior Manager carries the better margin. A blanket "use cheaper people" would destroy margin here.
+
+**Three defects the rendered page caught**, none of which a test would have: the margin read red when a solve landed exactly on target (float comparison against the displayed precision); the rate inputs were stretched across the column by a global `input[type=number] { width: 100% }` outranking the class; and a column headed "Cost" sat beside "Revenue" showing a rate rather than a total. That is the third session running where the real bugs appeared on screen rather than in the suite.
+
+**Open:** goal-seek solves with a uniform rate move, which holds the shape of the deal but will not find the cleverest answer. The leverage columns are there for that, and it stays a judgement rather than a solve until the tool has been used on a live bid.
+
 ### 2026-08-19 — Days a week, and phases you can add
 **Reviewed:** the units change on the allocation grid, and phase/workstream editing.
 

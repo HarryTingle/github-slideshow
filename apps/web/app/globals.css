@@ -308,6 +308,58 @@ input[type="range"] { width: 100%; accent-color: var(--olive-600); }
 .tooltip .tt-row .v { font-variant-numeric: tabular-nums; color: var(--ink-900); }
 .tooltip .swatch { width: 9px; height: 9px; border-radius: 2px; flex: none; }
 
+/* ---------- Pricing desk ---------- */
+
+/*
+ * The readout stays on screen while the rates below it are edited. Pricing a bid is a
+ * loop — change a number, look at the margin — and the loop is only fast if both halves
+ * are visible at once.
+ */
+.desk-bar {
+  position: sticky; top: 62px; z-index: 30;
+  background: var(--surface); border: 1px solid var(--line-strong);
+  border-radius: var(--radius); box-shadow: var(--shadow-card);
+  padding: 12px 18px; margin-bottom: 18px;
+  display: flex; align-items: center; gap: 26px; flex-wrap: wrap;
+}
+.desk-metric { display: flex; flex-direction: column; gap: 2px; }
+.desk-metric .k {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-400);
+  white-space: nowrap;
+}
+.desk-metric .v {
+  font-family: var(--font-serif), Georgia, serif; font-size: 22px; line-height: 1.1;
+  color: var(--ink-900); font-variant-numeric: tabular-nums;
+}
+.desk-metric .v.sm { font-size: 16px; }
+.desk-metric .sub { font-size: 11px; color: var(--ink-400); }
+.desk-sep { width: 1px; align-self: stretch; background: var(--line); }
+.desk-solve { margin-left: auto; display: flex; align-items: flex-end; gap: 8px; }
+.desk-solve input { width: 62px; text-align: center; }
+
+.lever { display: flex; align-items: center; gap: 7px; justify-content: flex-end; }
+.lever .bar { height: 5px; border-radius: 3px; flex: none; }
+.lever .n { font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+.lever.up .n { color: var(--status-good); }
+.lever.down .n { color: var(--status-breach); }
+.lever.nil .n { color: var(--ink-300); }
+
+input.rate-input {
+  width: 88px; text-align: right; font-variant-numeric: tabular-nums;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  background: var(--surface-raised); padding: 5px 8px; font: inherit; font-size: 13px;
+}
+input.rate-input:focus { border-color: var(--olive-500); outline: 2px solid var(--olive-200); }
+input.rate-input.overridden { border-color: var(--olive-500); background: var(--olive-050); font-weight: 600; color: var(--olive-800); }
+.rate-cell { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.rate-cell .std { font-size: 11px; color: var(--ink-300); min-width: 54px; text-align: right; }
+
+.desk-note {
+  background: var(--sand-100); border-left: 2px solid var(--olive-500);
+  padding: 9px 14px; font-size: 12.5px; color: var(--ink-700); border-radius: 0 6px 6px 0;
+  margin-bottom: 14px;
+}
+
 /* ---------- Allocation grid ---------- */
 
 .alloc { font-size: 12.5px; border-collapse: separate; border-spacing: 0; }

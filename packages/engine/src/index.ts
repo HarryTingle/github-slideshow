@@ -7,4 +7,5 @@ export * from './metrics';
 export * from './validate';
 export * from './edit';
 export * from './reference';
+export * from './pricing';
 export { meridian, practiceReference } from './seed';

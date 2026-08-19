@@ -474,3 +474,93 @@ export function contentsOf(engagement: Engagement, phaseId: string): { workstrea
     roles: engagement.assignments.filter((a) => ids.has(a.workstreamId)).length,
   };
 }
+
+/** Set the rate this deal bills for a grade. The practice standard is left alone. */
+export function setScenarioRate(
+  engagement: Engagement,
+  scenarioId: string,
+  gradeId: string,
+  rate: number | null,
+): Engagement {
+  return {
+    ...engagement,
+    scenarios: engagement.scenarios.map((scenario) => {
+      if (scenario.id !== scenarioId) return scenario;
+      const overrides = { ...(scenario.rateOverrides ?? {}) };
+      if (rate == null) delete overrides[gradeId];
+      else overrides[gradeId] = Math.max(0, Math.round(rate));
+      return { ...scenario, rateOverrides: overrides };
+    }),
+  };
+}
+
+/**
+ * Move every billed rate by the same factor.
+ *
+ * The blunt instrument, and the one a target-margin solve produces: it holds the shape
+ * of the deal and moves only its price, so the team you promised is the team you priced.
+ */
+export function applyRateMultiplier(
+  engagement: Engagement,
+  scenarioId: string,
+  multiplier: number,
+  billedRates: Record<string, number>,
+): Engagement {
+  if (!Number.isFinite(multiplier) || multiplier <= 0) return engagement;
+  return {
+    ...engagement,
+    scenarios: engagement.scenarios.map((scenario) => {
+      if (scenario.id !== scenarioId) return scenario;
+      const overrides: Record<string, number> = {};
+      for (const grade of engagement.grades) {
+        const current = billedRates[grade.id] ?? grade.chargeRate;
+        overrides[grade.id] = Math.max(0, Math.round(current * multiplier));
+      }
+      return { ...scenario, rateOverrides: overrides };
+    }),
+  };
+}
+
+/** Drop every rate override, returning the deal to the card it inherits. */
+export function clearScenarioRates(engagement: Engagement, scenarioId: string): Engagement {
+  return {
+    ...engagement,
+    scenarios: engagement.scenarios.map((scenario) =>
+      scenario.id === scenarioId ? { ...scenario, rateOverrides: undefined } : scenario,
+    ),
+  };
+}
+
+/** Set the headline value of whatever fixed-price structure a scenario carries. */
+export function setContractValue(
+  engagement: Engagement,
+  scenarioId: string,
+  value: number,
+): Engagement {
+  const price = Math.max(0, Math.round(value));
+  const reprice = (structure: Engagement['scenarios'][number]['structure']) =>
+    structure.type === 'fixedPrice' || structure.type === 'milestone'
+      ? { ...structure, contractValue: price }
+      : structure.type === 'cappedTm'
+        ? { ...structure, cap: price }
+        : structure.type === 'outcomeShare'
+          ? { ...structure, baseFee: price }
+          : structure;
+
+  return {
+    ...engagement,
+    scenarios: engagement.scenarios.map((scenario) =>
+      scenario.id === scenarioId
+        ? {
+            ...scenario,
+            structure: reprice(scenario.structure),
+            structureByPhase: scenario.structureByPhase
+              ? Object.fromEntries(
+                  Object.entries(scenario.structureByPhase).map(([id, s]) => [id, reprice(s)]),
+                )
+              : undefined,
+          }
+        : scenario,
+    ),
+  };
+}
