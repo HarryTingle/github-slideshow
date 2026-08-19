@@ -4,6 +4,7 @@ import { formatDays, formatMoney, formatPct, weekStartLabel } from '@scope/engin
 import { useState } from 'react';
 import { CumulativeChart, RankBars } from '@/components/charts';
 import { GuardrailRow, MarginTone } from '@/components/bits';
+import { ExportButton } from '@/components/ExportButton';
 import { useModel, useSelectedScenario } from '@/lib/store';
 
 type View = 'resourcing' | 'client' | 'slt';
@@ -28,6 +29,18 @@ export default function OutputsPage() {
               {entry.label}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="card-head">
+          <h3>Take it away</h3>
+          <span className="card-note">
+            Formulas, not frozen totals — the workbook can be checked, not just read
+          </span>
+        </div>
+        <div className="card-body">
+          <ExportButton />
         </div>
       </div>
 

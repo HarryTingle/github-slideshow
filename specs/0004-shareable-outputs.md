@@ -68,7 +68,8 @@ None new. All figures come from the engine (0001) and the commercial layer (0003
 - [ ] SLT pack shows every scenario, including the ones not recommended
 - [ ] Every figure in every output traces back to its inputs, in the app
 - [ ] Outputs are snapshots with a recorded version; editing the model afterwards does not alter an issued output
-- [ ] Excel export opens cleanly and reproduces the model's totals exactly
+- [x] Excel export opens cleanly and reproduces the model's totals exactly
+- [x] Formulas rather than frozen totals: every aggregate is a SUM or SUMIF over cells the reader can see, and every formula is asserted by test to evaluate to the value written beside it
 - [ ] A full engagement goes from blank model to client-ready proposal section and SLT pack **without opening Excel**
 - [ ] Generating all three outputs takes under a minute
 

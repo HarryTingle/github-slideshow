@@ -47,6 +47,21 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-19 — Excel export, and a formula that disagreed with the model
+**Reviewed:** `packages/engine/src/workbook.ts` and the export control on Outputs.
+
+**The shape.** Six sheets — Summary, Scenarios, Rates, Allocation, Resourcing, Detail. Detail is the spine: one row per assignment-week carrying availability, rates and arithmetic. Every other sheet summarises it by formula rather than restating it, so a reader can follow any figure down to the week it came from.
+
+**Formulas, not frozen totals.** A workbook of values is a screenshot with extra steps. The point of exporting is that a colleague or a client can check our arithmetic, which they can only do if the arithmetic is there. Each formula is written with its computed value cached alongside, so Excel recalculates and agrees while anything that reads the file without calculating still shows a number.
+
+**Which is where the export nearly shipped a lie.** The Rates sheet first computed revenue per grade as `days × rate` — the obvious formula, and wrong. Revenue is a sum of per-line figures each rounded to the penny; multiplying a rounded day count by a rate does not reproduce it. On the seeded plan the gap was £6.74 on the Director line. Small, and precisely the "your model does not add up" moment that costs a deal. The Rates sheet now uses SUMIF over Detail, which is exact.
+
+**How it was caught, and the decision that made catching it possible.** The workbook builder is pure data — rows, formulas, and the value each formula should produce — so it lives in the engine rather than the app. That let a test evaluate every formula against the literal cells around it and assert it equals the cached value. 280-odd formulas checked; the evaluator understands only the shapes the export writes and throws on anything else, so a new formula cannot slip past untested.
+
+**A misdiagnosis worth recording.** The headless browser reported the downloaded file as "download" rather than the engagement name, and I rewrote the save path by hand to fix it. A control test — a plain blob anchor with an explicit download attribute — reported "download" too, so the harness simply cannot observe the filename here. The rewrite was reverted; the filename is asserted on the plan by unit test instead.
+
+**Known limit:** the published preview runs in an embedded frame, which blocks a page from saving files. The control says so rather than failing silently. Run the app locally to get the workbook.
+
 ### 2026-08-19 — Overview becomes a report, and leave becomes personal
 **Reviewed:** the tab reorder, the scenario picker's move, and per-person leave.
 

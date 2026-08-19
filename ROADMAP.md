@@ -79,7 +79,7 @@ One model, three audiences. This is where the "no repeatable output" pain is kil
 - [x] Client view — approach, key dates, team shape as capability, commercial summary. Cost, margin, internal grades and other scenarios are structurally absent, not styled out of sight.
 - [x] SLT sign-off pack — recommendation, every scenario considered, risk, guardrail status
 - [x] Traceability: hover any allocation cell for the arithmetic behind it
-- [ ] Excel export
+- [x] Excel export — six sheets, formulas rather than frozen totals, every aggregate summing the Detail sheet
 - [ ] Brand application from the ingested guidelines — **blocked on M0**
 - [ ] Output snapshots with a recorded version, so an issued pack does not change
 - [ ] Approval trail
