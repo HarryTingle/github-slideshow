@@ -47,6 +47,17 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-19 — The rate card was living in the wrong place
+**Reported:** the new levels and capabilities had not pulled through into the delivery planner.
+
+**Root cause, reproduced before changing anything:** a saved engagement carried its own copy of the grade ladder, capability list, rate card and guardrails, and the saved copy shadowed the seed entirely. Anyone who had edited the model once was pinned to whatever reference data existed that day — old grades in the dropdowns, old rates behind every figure, leave at zero. Clearing the browser fixed the symptom and hid the defect.
+
+**Why it matters beyond the demo:** reference data belongs to the *practice*, not to a document. Left alone, this is a saved bid that keeps pricing at last year's rates, silently, with nothing on screen to say so. That is the same class of failure as the spreadsheet problems in the pain statement, reproduced in the tool meant to fix them.
+
+**Fix:** `packages/engine/src/reference.ts`. A saved document is reconciled against the current practice reference on load: the ladder, capabilities, rates and guardrails are replaced, and the document's own references are remapped onto them — by name where a name still exists, otherwise by position in the ladder, so a grade that sat 5th of 6 lands 7th of 8 rather than at the bottom. Anything that moved is reported on screen rather than applied quietly, because a grade that silently becomes a different grade changes the price. An explicit annual-leave setting is respected, including zero; only a document predating the field takes the practice default.
+
+**Also:** the week-range controls came off the phase and workstream rows at Harry's request. Phases and workstreams now size themselves to the work staffed on them, which is one fewer thing to keep in step and one fewer way to disagree with the grid.
+
 ### 2026-08-19 — Real cost rates and annual leave; a discrepancy worth resolving before anything else
 **Reviewed:** the resourcing model extract — charge and cost rates for all eight grades, billable days, and annual leave.
 

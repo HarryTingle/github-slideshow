@@ -17,7 +17,7 @@ import { Timeline } from '@/components/Timeline';
 import { useModel } from '@/lib/store';
 
 export default function PlanPage() {
-  const { stressed, analysis, findings, update } = useModel();
+  const { stressed, analysis, findings, update, reconciliation, dismissReconciliation } = useModel();
 
   const fte = Array.from({ length: stressed.weeks }, (_, i) => analysis.plan.fteByWeek.get(i + 1) ?? 0);
   const basis = capacityBasis(stressed);
@@ -38,6 +38,32 @@ export default function PlanPage() {
           <FictionPill />
         </div>
       </div>
+
+      {reconciliation.length > 0 && (
+        <div className="card" style={{ marginBottom: 18, borderColor: 'var(--terracotta-200)' }}>
+          <div className="card-body">
+            <div className="row gap-10" style={{ alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <strong style={{ color: 'var(--ink-900)' }}>
+                  This model was saved against an earlier rate card.
+                </strong>
+                <p className="small" style={{ margin: '4px 0 8px', color: 'var(--ink-500)' }}>
+                  The plan is yours; the grade ladder, capabilities and rates belong to the
+                  practice, so they have been brought up to date.
+                </p>
+                <ul className="small" style={{ margin: 0, paddingLeft: 18, color: 'var(--ink-700)' }}>
+                  {reconciliation.map((note) => (
+                    <li key={note}>{note}</li>
+                  ))}
+                </ul>
+              </div>
+              <button className="ghost tiny" onClick={dismissReconciliation}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid cols-4" style={{ marginBottom: 18 }}>
         <Stat label="Total effort" value={`${formatDays(analysis.plan.totalEffortDays)} days`} small />

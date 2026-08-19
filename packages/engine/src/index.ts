@@ -6,4 +6,5 @@ export * from './commercial';
 export * from './metrics';
 export * from './validate';
 export * from './edit';
-export { meridian } from './seed';
+export * from './reference';
+export { meridian, practiceReference } from './seed';

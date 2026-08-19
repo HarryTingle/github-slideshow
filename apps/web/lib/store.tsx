@@ -4,6 +4,8 @@ import {
   analyse,
   applySensitivity,
   meridian,
+  practiceReference,
+  reconcileReferences,
   validate,
   type Engagement,
   type EngagementAnalysis,
@@ -32,6 +34,9 @@ interface ModelContextValue {
   setSensitivity: (next: Sensitivity) => void;
   update: (mutate: (draft: Engagement) => Engagement) => void;
   reset: () => void;
+  /** What changed when a saved model was brought onto the current rate card. */
+  reconciliation: string[];
+  dismissReconciliation: () => void;
   isDirty: boolean;
   selectedScenarioId: string;
   setSelectedScenarioId: (id: string) => void;
@@ -47,13 +52,22 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>(meridian.scenarios[0]!.id);
   const [isDirty, setIsDirty] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [reconciliation, setReconciliation] = useState<string[]>([]);
 
   // Load after mount so the server and client render the same thing first.
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        setEngagement(JSON.parse(saved) as Engagement);
+        // A saved document carries the plan, not the practice's rate card. Bring it onto
+        // the current ladder, capabilities and rates before anything is shown, or the
+        // document silently prices itself off whatever card existed when it was saved.
+        const { engagement: reconciled, notes } = reconcileReferences(
+          JSON.parse(saved) as Engagement,
+          practiceReference,
+        );
+        setEngagement(reconciled);
+        setReconciliation(notes);
         setIsDirty(true);
       }
     } catch {
@@ -80,6 +94,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
     setEngagement(meridian);
     setSensitivity(NO_SENSITIVITY);
     setIsDirty(false);
+    setReconciliation([]);
     try {
       window.localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -105,10 +120,12 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
       update,
       reset,
       isDirty,
+      reconciliation,
+      dismissReconciliation: () => setReconciliation([]),
       selectedScenarioId,
       setSelectedScenarioId,
     }),
-    [engagement, stressed, analysis, findings, sensitivity, update, reset, isDirty, selectedScenarioId],
+    [engagement, stressed, analysis, findings, sensitivity, update, reset, isDirty, reconciliation, selectedScenarioId],
   );
 
   return <ModelContext.Provider value={value}>{children}</ModelContext.Provider>;

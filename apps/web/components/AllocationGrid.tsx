@@ -108,14 +108,6 @@ export function AllocationGrid() {
                             }
                           />
                         </span>
-                        <WeekRange
-                          from={phase.startWeek}
-                          to={phase.endWeek}
-                          label={`Phase ${phase.name}`}
-                          onChange={(startWeek, endWeek) =>
-                            update((draft) => setPhase(draft, phase.id, { startWeek, endWeek }))
-                          }
-                        />
                       </div>
                     </td>
                     <td colSpan={columns - 1} />
@@ -149,16 +141,6 @@ export function AllocationGrid() {
                               >
                                 + role
                               </button>
-                              <WeekRange
-                                from={workstream.startWeek}
-                                to={workstream.endWeek}
-                                label={`Workstream ${workstream.name}`}
-                                onChange={(startWeek, endWeek) =>
-                                  update((draft) =>
-                                    setWorkstream(draft, workstream.id, { startWeek, endWeek }),
-                                  )
-                                }
-                              />
                             </div>
                           </td>
                           <td colSpan={columns - 1} />
@@ -290,41 +272,6 @@ export function AllocationGrid() {
 /** Rows have to be siblings of <tr>, so grouping needs a fragment rather than a wrapper. */
 function FragmentRows({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
-}
-
-function WeekRange({
-  from,
-  to,
-  label,
-  onChange,
-}: {
-  from: number;
-  to: number;
-  label: string;
-  onChange: (from: number, to: number) => void;
-}) {
-  return (
-    <span className="rh-weeks">
-      <span className="lbl">wk</span>
-      <input
-        className="wk-input"
-        type="number"
-        min={1}
-        aria-label={`${label} start week`}
-        value={from}
-        onChange={(event) => onChange(Number.parseInt(event.target.value, 10) || 1, to)}
-      />
-      <span className="dash">–</span>
-      <input
-        className="wk-input"
-        type="number"
-        min={1}
-        aria-label={`${label} end week`}
-        value={to}
-        onChange={(event) => onChange(from, Number.parseInt(event.target.value, 10) || from)}
-      />
-    </span>
-  );
 }
 
 function Cell({

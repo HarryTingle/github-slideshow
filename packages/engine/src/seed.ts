@@ -1,5 +1,6 @@
 import { pounds } from './money';
-import type { Engagement } from './types';
+import type { Engagement, Guardrail } from './types';
+import type { ReferenceData } from './reference';
 
 /**
  * ⚠️ Real rate card, fictional engagement.
@@ -67,6 +68,65 @@ const ROLES = [
   { id: 'c-partners', name: 'AI Business Partners' },
   { id: 'c-platform', name: 'Platform Engineering' },
 ];
+
+/**
+ * The practice's reference data — the things that belong to the firm rather than to any
+ * one engagement. A saved engagement is reconciled against this on load, so nobody ends
+ * up pricing a bid off a rate card they happened to open a year ago.
+ */
+
+/**
+ * INVENTED. The real thresholds and the real approval chain are unknown (REVIEW Q5).
+ *
+ * These were previously set against a placeholder cost base that implied a 50%-margin
+ * business. Against the real rate card the practice runs at 20-30%, so the old
+ * thresholds breached on every scenario at once and told the reader nothing. They are
+ * set here to sit inside the range the real card actually produces, which makes them
+ * discriminating again — but they remain guesses, and a guardrail that is wrong is
+ * worse than no guardrail, because it launders a bad deal through an approval.
+ */
+const GUARDRAILS: Guardrail[] = [
+
+    {
+      id: 'gr-margin',
+      label: 'Gross margin',
+      metric: 'grossMarginPct',
+      operator: 'gte',
+      threshold: 0.2,
+      approver: 'Head of Consulting',
+    },
+    {
+      id: 'gr-downside',
+      label: 'Downside margin',
+      metric: 'downsideMarginPct',
+      operator: 'gte',
+      threshold: 0.1,
+      approver: 'SLT',
+    },
+    {
+      id: 'gr-discount',
+      label: 'Discount against standard rates',
+      metric: 'discountPct',
+      operator: 'lte',
+      threshold: 0.1,
+      approver: 'Head of Commercial',
+    },
+    {
+      id: 'gr-cash',
+      label: 'Maximum cash exposure',
+      metric: 'maxCashExposure',
+      operator: 'lte',
+      threshold: pounds(75000),
+      approver: 'Finance Director',
+    },
+];
+
+export const practiceReference: ReferenceData = {
+  grades: GRADES,
+  roles: ROLES,
+  annualLeaveDays: 23,
+  guardrails: GUARDRAILS,
+};
 
 export const meridian: Engagement = {
   id: 'eng-meridian',
@@ -212,48 +272,5 @@ export const meridian: Engagement = {
       notes: 'Fixed price either end, T&M through the build where the scope is least certain.',
     },
   ],
-  /**
-   * INVENTED. The real thresholds and the real approval chain are unknown (REVIEW Q5).
-   *
-   * These were previously set against a placeholder cost base that implied a 50%-margin
-   * business. Against the real rate card the practice runs at 20–30%, so the old
-   * thresholds breached on every scenario at once and told the reader nothing. They are
-   * re-set here to sit inside the range the real card actually produces, which makes
-   * them discriminating again — but they remain guesses, and a guardrail that is wrong
-   * is worse than no guardrail, because it launders a bad deal through an approval.
-   */
-  guardrails: [
-    {
-      id: 'gr-margin',
-      label: 'Gross margin',
-      metric: 'grossMarginPct',
-      operator: 'gte',
-      threshold: 0.2,
-      approver: 'Head of Consulting',
-    },
-    {
-      id: 'gr-downside',
-      label: 'Downside margin',
-      metric: 'downsideMarginPct',
-      operator: 'gte',
-      threshold: 0.1,
-      approver: 'SLT',
-    },
-    {
-      id: 'gr-discount',
-      label: 'Discount against standard rates',
-      metric: 'discountPct',
-      operator: 'lte',
-      threshold: 0.1,
-      approver: 'Head of Commercial',
-    },
-    {
-      id: 'gr-cash',
-      label: 'Maximum cash exposure',
-      metric: 'maxCashExposure',
-      operator: 'lte',
-      threshold: pounds(75000),
-      approver: 'Finance Director',
-    },
-  ],
+  guardrails: GUARDRAILS,
 };

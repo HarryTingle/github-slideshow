@@ -16,6 +16,7 @@ import {
   setWorkstream,
 } from './edit';
 import { meridian } from './seed';
+import type { Engagement } from './types';
 import { validate } from './validate';
 
 const effort = (engagement = meridian) => computePlan(engagement).totalEffortDays;
