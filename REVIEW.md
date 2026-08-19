@@ -47,6 +47,17 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-19 — Days a week, and phases you can add
+**Reviewed:** the units change on the allocation grid, and phase/workstream editing.
+
+**Units.** Cells now read days a week — five is a full week — rather than fractional FTE. "Four days a week" is how the conversation actually happens; 0.8 is a translation people do in their heads and get wrong. The model still holds allocation as a fraction, because that is what composes correctly with a week carrying a bank holiday, so the conversion sits in the engine with a round-trip test across several working-week lengths rather than being done twice in the UI.
+
+The distinction the grid now has to carry: **a cell books time, and time booked is not time delivered.** Five days booked in a week with a public holiday delivers four. The grid shows the booking, the engine computes the delivery, and the trace panel shows the step between them.
+
+**A regression the change exposed.** The terracotta highlight marking short weeks fired on `availableDays < workingDaysPerWeek`, which was fine until annual leave started shaving *every* week by the same sliver — at which point it painted nearly the whole grid and stopped meaning anything. It now ignores the leave provision and marks only weeks short for a specific reason: a public holiday or booked leave. 15 cells of 238, which is a flag again rather than a wash. Caught by looking at the rendered grid, not by a test.
+
+**Phases and workstreams** can be added and deleted in the grid. Deleting cascades — an orphaned workstream would keep costing money from a phase that no longer exists — so the control asks first and names what would go ("Delete + 3 workstreams, 9 roles?"). Two clicks rather than a browser dialog, because `window.confirm` is blocked in a sandboxed frame and, with no undo, deleting nine people should take more than a stray click. A plan can now be emptied completely and rebuilt, which is asserted by test.
+
 ### 2026-08-19 — The rate card was living in the wrong place
 **Reported:** the new levels and capabilities had not pulled through into the delivery planner.
 

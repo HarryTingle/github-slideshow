@@ -381,14 +381,24 @@ input[type="range"] { width: 100%; accent-color: var(--olive-600); }
   padding: 2px 5px; font-size: 14px; line-height: 1; border-radius: 4px; flex: none;
 }
 .row-x:hover { background: var(--terracotta-100); color: var(--terracotta-700); }
+.confirm-armed {
+  border: 1px solid var(--terracotta-600); background: var(--terracotta-100);
+  color: var(--terracotta-700); font-size: 11px; padding: 2px 9px; border-radius: 999px;
+  white-space: nowrap; font-weight: 500;
+}
 .add-role {
   border: 1px dashed var(--line-strong); background: transparent; color: var(--ink-400);
   font-size: 11.5px; padding: 3px 9px; border-radius: 999px;
 }
 .add-role:hover { border-color: var(--olive-500); color: var(--olive-700); background: var(--olive-050); }
+.add-phase {
+  border: 1px dashed var(--line-strong); background: transparent; color: var(--ink-500);
+  font-size: 12.5px; padding: 6px 14px; border-radius: 999px;
+}
+.add-phase:hover { border-color: var(--olive-500); color: var(--olive-700); background: var(--olive-050); }
 
 .alloc input.cellinput {
-  width: 42px; border: 1px solid transparent; background: transparent;
+  width: 44px; border: 1px solid transparent; background: transparent;
   text-align: center; padding: 5px 0; border-radius: 4px; font: inherit;
   font-variant-numeric: tabular-nums; color: var(--ink-700);
 }

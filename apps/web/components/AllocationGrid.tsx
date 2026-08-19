@@ -2,11 +2,17 @@
 
 import {
   addAssignment,
+  addPhase,
+  addWorkstream,
+  allocationToDays,
+  contentsOf,
   formatMoney,
   headerSpans,
   quarterLabel,
   removeAssignment,
-  setAllocation,
+  removePhase,
+  removeWorkstream,
+  setAllocationDays,
   setAssignmentGrade,
   setAssignmentRole,
   setPersonName,
@@ -19,15 +25,16 @@ import {
   type Engagement,
 } from '@scope/engine';
 import { useMemo, useState } from 'react';
+import { ConfirmButton } from './ConfirmButton';
 import { useModel } from '@/lib/store';
 
 /**
  * The allocation grid — roles down, weeks across, FTE in the cells.
  *
  * Deliberately the view that most resembles the spreadsheet people already use, and
- * editable in the same way: every box takes a number, including the empty ones. Typing
- * outside a row's current range extends it (the weeks stepped over are set to zero, so
- * nothing is staffed that nobody asked for).
+ * editable in the same way: every box takes a number of **days a week**, including the
+ * empty ones — five is a full week. Typing outside a row's current range extends it (the
+ * weeks stepped over are set to zero, so nothing is staffed that nobody asked for).
  *
  * Phase and workstream dates are edited here too, and the timeline above is a view of
  * the same fields — there is no second copy to keep in step. The containment rules live
@@ -108,6 +115,19 @@ export function AllocationGrid() {
                             }
                           />
                         </span>
+                        <button
+                          className="add-role"
+                          onClick={() => update((draft) => addWorkstream(draft, phase.id))}
+                          title="Add a workstream to this phase"
+                        >
+                          + workstream
+                        </button>
+                        <ConfirmButton
+                          label="×"
+                          title={`Delete ${phase.name}`}
+                          confirmLabel={deleteWarning(stressed, phase.id)}
+                          onConfirm={() => update((draft) => removePhase(draft, phase.id))}
+                        />
                       </div>
                     </td>
                     <td colSpan={columns - 1} />
@@ -141,6 +161,16 @@ export function AllocationGrid() {
                               >
                                 + role
                               </button>
+                              <ConfirmButton
+                                label="×"
+                                title={`Delete ${workstream.name}`}
+                                confirmLabel={
+                                  assignments.length
+                                    ? `Delete + ${assignments.length} role${assignments.length === 1 ? '' : 's'}?`
+                                    : 'Delete?'
+                                }
+                                onConfirm={() => update((draft) => removeWorkstream(draft, workstream.id))}
+                              />
                             </div>
                           </td>
                           <td colSpan={columns - 1} />
@@ -174,16 +204,14 @@ export function AllocationGrid() {
                                         }
                                       />
                                     </span>
-                                    <button
-                                      className="row-x"
-                                      aria-label="Remove this role"
+                                    <ConfirmButton
+                                      label="×"
                                       title="Remove this role"
-                                      onClick={() =>
+                                      confirmLabel="Remove?"
+                                      onConfirm={() =>
                                         update((draft) => removeAssignment(draft, assignment.id))
                                       }
-                                    >
-                                      ×
-                                    </button>
+                                    />
                                   </div>
                                   <div className="rh-line">
                                     <select
@@ -232,7 +260,7 @@ export function AllocationGrid() {
                                   sprintEdge={sprintStarts.has(week)}
                                   onTrace={setTrace}
                                   onChange={(value) =>
-                                    update((draft) => setAllocation(draft, assignment.id, week, value))
+                                    update((draft) => setAllocationDays(draft, assignment.id, week, value))
                                   }
                                 />
                               ))}
@@ -249,6 +277,12 @@ export function AllocationGrid() {
         </table>
       </div>
 
+      <div className="row" style={{ marginTop: 14 }}>
+        <button className="add-phase" onClick={() => update((draft) => addPhase(draft))}>
+          + Add phase
+        </button>
+      </div>
+
       <div className="sep" />
       <div className="row gap-24 wrap tiny muted">
         <span className="row gap-6">
@@ -256,11 +290,11 @@ export function AllocationGrid() {
           Reduced by holiday or leave
         </span>
         <span className="row gap-6">
-          <span style={{ color: 'var(--olive-800)', fontWeight: 600 }}>0.6</span> Per-week override
+          <span style={{ color: 'var(--olive-800)', fontWeight: 600 }}>3</span> Per-week override
         </span>
         <span>
-          Type in any box, including the empty ones. Typing past a row&apos;s dates extends it;
-          clearing the box at either end shortens it.
+          Boxes are days a week — {stressed.calendar.workingDaysPerWeek} is full time. Typing past
+          a row&apos;s dates extends it; clearing the box at either end shortens it.
         </span>
       </div>
 
@@ -269,9 +303,24 @@ export function AllocationGrid() {
   );
 }
 
+/** What deleting a phase would take with it — shown on the confirm step. */
+function deleteWarning(engagement: Engagement, phaseId: string): string {
+  const { workstreams, roles } = contentsOf(engagement, phaseId);
+  if (roles === 0 && workstreams === 0) return 'Delete?';
+  const parts = [];
+  if (workstreams) parts.push(`${workstreams} workstream${workstreams === 1 ? '' : 's'}`);
+  if (roles) parts.push(`${roles} role${roles === 1 ? '' : 's'}`);
+  return `Delete + ${parts.join(', ')}?`;
+}
+
 /** Rows have to be siblings of <tr>, so grouping needs a fragment rather than a wrapper. */
 function FragmentRows({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
+}
+
+/** Trim trailing zeros so 5 shows as "5" and 2.5 as "2.5". */
+function tidy(value: number): string {
+  return Number.parseFloat(value.toFixed(2)).toString();
 }
 
 function Cell({
@@ -293,8 +342,12 @@ function Cell({
 }) {
   const inRange = week >= assignment.startWeek && week <= assignment.endWeek;
   const override = assignment.allocationByWeek?.[week];
-  const reduced = line != null && line.availableDays < workingDays;
-  const value = inRange ? (override ?? assignment.allocation) : (override ?? '');
+  // Only flag weeks short for a *specific* reason — a public holiday or booked leave.
+  // The annual-leave provision shaves every week by the same sliver, so counting it here
+  // would paint the whole grid and the flag would stop meaning anything.
+  const reduced = line != null && line.availableDays + line.leaveProvision < workingDays - 1e-9;
+  const allocation = inRange ? (override ?? assignment.allocation) : override;
+  const value = allocation == null ? '' : tidy(allocationToDays(allocation, workingDays));
 
   return (
     <td className={`cell${sprintEdge ? ' sprint-edge' : ''}`}>
@@ -302,11 +355,15 @@ function Cell({
         className={`cellbox${reduced ? ' reduced' : ''}`}
         onMouseEnter={() => line && onTrace(line)}
         onMouseLeave={() => onTrace(null)}
-        title={reduced ? `${line?.availableDays} days available this week — holiday or leave` : undefined}
+        title={
+          reduced
+            ? `Only ${line?.availableDays} days available this week — holiday or leave`
+            : undefined
+        }
       >
         <input
           className={`cellinput${inRange ? '' : ' outside'}${override != null ? ' override' : ''}`}
-          aria-label={`Allocation in week ${week}`}
+          aria-label={`Days a week in week ${week}`}
           placeholder="·"
           value={value}
           onChange={(event) => {
@@ -329,9 +386,10 @@ function CellTrace({ line, engagement }: { line: EffortLine; engagement: Engagem
     <div className="trace-formula mt-16">
       <strong>Week {line.week}</strong> · {grade?.name} ·{' '}
       <code>
-        {line.allocation} FTE × {line.availableDays} available days
+        {tidy(allocationToDays(line.allocation, engagement.calendar.workingDaysPerWeek))} days
+        booked of {line.availableDays} available
         {line.rampFactor < 1 ? ` × ${line.rampFactor.toFixed(2)} ramp` : ''} ={' '}
-        {line.effortDays.toFixed(2)} days
+        {line.effortDays.toFixed(2)} delivered
       </code>
       <br />
       <code>

@@ -3,6 +3,14 @@ import { headerSpans, quarterLabel, sprintNumber, weekStartLabel } from './calen
 import { computePlan } from './compute';
 import {
   addAssignment,
+  addPhase,
+  addWorkstream,
+  allocationToDays,
+  contentsOf,
+  daysToAllocation,
+  removePhase,
+  removeWorkstream,
+  setAllocationDays,
   normalise,
   removeAssignment,
   setAllocation,
@@ -315,5 +323,106 @@ describe('sprint and quarter rulers', () => {
   it('clamps a nonsense sprint length', () => {
     expect(setSprintWeeks(meridian, 0).sprintWeeks).toBe(1);
     expect(setSprintWeeks(meridian, 99).sprintWeeks).toBe(12);
+  });
+});
+
+
+describe('cells in days a week', () => {
+  it('reads a full week as the working week, not as 1', () => {
+    expect(allocationToDays(1, 5)).toBe(5);
+    expect(allocationToDays(0.6, 5)).toBeCloseTo(3, 6);
+    expect(daysToAllocation(5, 5)).toBe(1);
+    expect(daysToAllocation(4, 5)).toBeCloseTo(0.8, 6);
+  });
+
+  it('round-trips whatever the working week is', () => {
+    for (const workingDays of [4, 4.5, 5, 6]) {
+      for (const days of [0, 1, 2.5, 4, 5]) {
+        expect(allocationToDays(daysToAllocation(days, workingDays), workingDays)).toBeCloseTo(days, 9);
+      }
+    }
+  });
+
+  it('does not divide by a zero-day week', () => {
+    expect(daysToAllocation(5, 0)).toBe(0);
+  });
+
+  it('books five days as full time', () => {
+    const noLeave = { ...meridian, annualLeaveDays: 0 };
+    const next = setAllocationDays(noLeave, 'a7', 5, 5);
+    expect(next.assignments.find((a) => a.id === 'a7')!.allocationByWeek?.[5]).toBeCloseTo(1, 9);
+  });
+
+  it('books time, which is not the same as delivering it', () => {
+    // Week 8 carries a public holiday. Five days booked still delivers four.
+    const noLeave = { ...meridian, annualLeaveDays: 0 };
+    const next = setAllocationDays(noLeave, 'a7', 8, 5);
+    const line = computePlan(next).lines.find((l) => l.assignmentId === 'a7' && l.week === 8)!;
+    expect(line.allocation).toBeCloseTo(1, 9);
+    expect(line.availableDays).toBe(4);
+    expect(line.effortDays).toBeCloseTo(4, 9);
+  });
+
+  it('clears a cell when given null', () => {
+    const set = setAllocationDays(meridian, 'a7', 6, 2);
+    const cleared = setAllocationDays(set, 'a7', 6, null);
+    expect(cleared.assignments.find((a) => a.id === 'a7')!.allocationByWeek?.[6]).toBeUndefined();
+  });
+});
+
+describe('phases and workstreams', () => {
+  it('adds a phase after the last one, with somewhere to put people', () => {
+    const next = addPhase(meridian, 'Hypercare');
+    const phase = next.phases.find((p) => p.name === 'Hypercare')!;
+    expect(phase.startWeek).toBe(15);
+    expect(next.workstreams.filter((ws) => ws.phaseId === phase.id)).toHaveLength(1);
+    expect(next.weeks).toBeGreaterThanOrEqual(phase.endWeek);
+  });
+
+  it('removes a phase and everything staffed on it', () => {
+    const before = computePlan(meridian).totalEffortDays;
+    const next = removePhase(meridian, 'ph-build');
+    expect(next.phases.find((p) => p.id === 'ph-build')).toBeUndefined();
+    expect(next.workstreams.some((ws) => ws.phaseId === 'ph-build')).toBe(false);
+    expect(computePlan(next).totalEffortDays).toBeLessThan(before);
+  });
+
+  it('leaves no orphaned workstream or assignment behind', () => {
+    const next = removePhase(meridian, 'ph-build');
+    const phaseIds = new Set(next.phases.map((p) => p.id));
+    const workstreamIds = new Set(next.workstreams.map((ws) => ws.id));
+    expect(next.workstreams.every((ws) => phaseIds.has(ws.phaseId))).toBe(true);
+    expect(next.assignments.every((a) => workstreamIds.has(a.workstreamId))).toBe(true);
+  });
+
+  it('reports what a delete would take with it', () => {
+    expect(contentsOf(meridian, 'ph-build')).toEqual({ workstreams: 3, roles: 9 });
+    expect(contentsOf(meridian, 'ph-discovery').roles).toBe(4);
+  });
+
+  it('allows the plan to be emptied and rebuilt', () => {
+    let next = meridian;
+    for (const phase of [...meridian.phases]) next = removePhase(next, phase.id);
+    expect(next.phases).toHaveLength(0);
+    expect(next.assignments).toHaveLength(0);
+    expect(computePlan(next).totalEffortDays).toBe(0);
+
+    next = addPhase(next, 'Discovery');
+    expect(next.phases).toHaveLength(1);
+    expect(next.workstreams).toHaveLength(1);
+    next = addAssignment(next, next.workstreams[0]!.id);
+    expect(computePlan(next).totalEffortDays).toBeGreaterThan(0);
+  });
+
+  it('adds a workstream spanning its phase, and removes it with its roles', () => {
+    const added = addWorkstream(meridian, 'ph-build', 'Data Quality');
+    const workstream = added.workstreams.find((ws) => ws.name === 'Data Quality')!;
+    expect(workstream.startWeek).toBe(4);
+    expect(workstream.endWeek).toBe(11);
+
+    const withRole = addAssignment(added, workstream.id);
+    const removed = removeWorkstream(withRole, workstream.id);
+    expect(removed.workstreams.find((ws) => ws.id === workstream.id)).toBeUndefined();
+    expect(removed.assignments.some((a) => a.workstreamId === workstream.id)).toBe(false);
   });
 });

@@ -361,3 +361,116 @@ export function setWeeks(engagement: Engagement, weeks: number): Engagement {
 export function setSprintWeeks(engagement: Engagement, sprintWeeks: number): Engagement {
   return { ...engagement, sprintWeeks: Math.max(1, Math.min(12, Math.round(sprintWeeks) || 1)) };
 }
+
+/**
+ * Cells are expressed in **days per week**, not fractional FTE.
+ *
+ * "Four days a week" is how resourcing conversations actually happen; 0.8 is a
+ * translation people have to do in their heads, and get wrong. The engine keeps
+ * allocation as a fraction because that is what composes correctly with a week that
+ * has a bank holiday in it — so the conversion lives here, tested, rather than being
+ * done twice in the UI.
+ */
+export function daysToAllocation(days: number, workingDaysPerWeek: number): number {
+  if (!workingDaysPerWeek || workingDaysPerWeek <= 0) return 0;
+  return days / workingDaysPerWeek;
+}
+
+export function allocationToDays(allocation: number, workingDaysPerWeek: number): number {
+  return allocation * workingDaysPerWeek;
+}
+
+/**
+ * Set a cell from a number of days a week.
+ *
+ * Note this books *time*, and time booked is not time delivered: a full five days in a
+ * week carrying a bank holiday still delivers four. The grid shows what was booked, the
+ * engine computes what lands, and the trace panel shows the step between them.
+ */
+export function setAllocationDays(
+  engagement: Engagement,
+  assignmentId: string,
+  week: WeekIndex,
+  days: number | null,
+): Engagement {
+  if (days == null) return setAllocation(engagement, assignmentId, week, null);
+  return setAllocation(
+    engagement,
+    assignmentId,
+    week,
+    daysToAllocation(days, engagement.calendar.workingDaysPerWeek),
+  );
+}
+
+/** A phase, with one workstream in it so roles can be added straight away. */
+export function addPhase(engagement: Engagement, name = 'New phase'): Engagement {
+  const lastEnd = engagement.phases.reduce((end, phase) => Math.max(end, phase.endWeek), 0);
+  const order = engagement.phases.reduce((max, phase) => Math.max(max, phase.order), 0) + 1;
+  const startWeek = clampWeek(lastEnd + 1);
+  const endWeek = clampWeek(startWeek + 3);
+  const id = `ph-${Math.random().toString(36).slice(2, 9)}`;
+
+  return normalise({
+    ...engagement,
+    phases: [...engagement.phases, { id, name, order, startWeek, endWeek }],
+    workstreams: [
+      ...engagement.workstreams,
+      { id: `ws-${Math.random().toString(36).slice(2, 9)}`, name: 'New workstream', phaseId: id, startWeek, endWeek },
+    ],
+  });
+}
+
+/**
+ * Remove a phase, and with it every workstream and every role staffed on it.
+ *
+ * Cascading is the only honest option — an orphaned workstream would keep costing money
+ * from a phase that no longer exists. The UI asks first, because there is no undo.
+ */
+export function removePhase(engagement: Engagement, phaseId: string): Engagement {
+  const workstreamIds = new Set(
+    engagement.workstreams.filter((ws) => ws.phaseId === phaseId).map((ws) => ws.id),
+  );
+  return normalise({
+    ...engagement,
+    phases: engagement.phases.filter((phase) => phase.id !== phaseId),
+    workstreams: engagement.workstreams.filter((ws) => ws.phaseId !== phaseId),
+    assignments: engagement.assignments.filter((a) => !workstreamIds.has(a.workstreamId)),
+  });
+}
+
+export function addWorkstream(engagement: Engagement, phaseId: string, name = 'New workstream'): Engagement {
+  const phase = engagement.phases.find((candidate) => candidate.id === phaseId);
+  if (!phase) return engagement;
+  return normalise({
+    ...engagement,
+    workstreams: [
+      ...engagement.workstreams,
+      {
+        id: `ws-${Math.random().toString(36).slice(2, 9)}`,
+        name,
+        phaseId,
+        startWeek: phase.startWeek,
+        endWeek: phase.endWeek,
+      },
+    ],
+  });
+}
+
+/** Remove a workstream and everything staffed on it. */
+export function removeWorkstream(engagement: Engagement, workstreamId: string): Engagement {
+  return normalise({
+    ...engagement,
+    workstreams: engagement.workstreams.filter((ws) => ws.id !== workstreamId),
+    assignments: engagement.assignments.filter((a) => a.workstreamId !== workstreamId),
+  });
+}
+
+/** How much work a phase or workstream is carrying — for a delete confirmation. */
+export function contentsOf(engagement: Engagement, phaseId: string): { workstreams: number; roles: number } {
+  const workstreams = engagement.workstreams.filter((ws) => ws.phaseId === phaseId);
+  const ids = new Set(workstreams.map((ws) => ws.id));
+  return {
+    workstreams: workstreams.length,
+    roles: engagement.assignments.filter((a) => ids.has(a.workstreamId)).length,
+  };
+}

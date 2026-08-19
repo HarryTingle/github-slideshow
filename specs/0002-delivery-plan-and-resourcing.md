@@ -73,6 +73,8 @@ Peak-to-average ratio flags a staffing profile the resourcing team will struggle
 - [ ] Unstaffed assignments are visible as gaps, not hidden
 - [ ] Changing an assignment's dates or allocation updates every downstream number immediately
 - [x] The allocation grid is directly editable — this is the interaction people already know
+- [x] Cells are **days a week**, not fractional FTE: five is a full week. The engine keeps allocation as a fraction because that is what composes correctly with a short week; the conversion is tested at the boundary rather than done in the UI
+- [x] Phases and workstreams can be added and deleted in the grid. Deleting cascades to everything staffed beneath, and asks first, naming what would go — there is no undo
 - [x] **Every** cell takes a number, including cells outside a row's current dates; typing outside the range extends it, and the weeks stepped over are set to zero so no effort appears uninvited
 - [x] The cells are the *only* date control on a role row: clearing the box at either end shortens the row, collapsing past any zeros left behind by an earlier extension, so extending and undoing is an exact round trip
 - [x] Clearing a box inside a row returns that week to the row's default rather than shortening it — a week in the middle of a booking is still booked
