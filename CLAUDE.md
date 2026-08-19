@@ -77,10 +77,12 @@ Each directory has a `README.md` explaining its conventions and a `_template-*.m
 - **Testing** — Vitest. Engine coverage is a gate, not an aspiration. Golden-file tests reproduce real engagement models from `/context/inputs` end to end.
 - **Money & time** — integer minor units for money; days as the base unit of effort; ISO weeks as the base unit of the calendar.
 
-### Seeded data — real taxonomy, invented numbers
-The **grade ladder and capability list are the practice's real ones** (`context/domain-model.md` §3). Everything else in the seeded engagement is invented: *Meridian Retail Group* does not exist, and **not one rate in it came from a real rate card**.
+### Seeded data — real rate card, fictional engagement
+**Real and sourced:** the grade ladder, the capability list, charge *and* cost rates for all eight grades, and the 23-day annual leave allowance (`context/domain-model.md` §3).
 
-That split matters. The shape of the model is now right, which makes the numbers more convincing and therefore more dangerous. Nothing in the seed may be quoted, and the rate card must be replaced wholesale when the real one arrives — never adjusted towards it.
+**Invented:** *Meridian Retail Group*, the plan, the team, the client rate card, the contract values, and the guardrail thresholds.
+
+Margin percentages are therefore real *for a given plan*; absolute figures are not, because the plan is not. No figure from the seeded engagement may be quoted. Where a number is still invented it is labelled as such in the code, and the marker on every page of the app says which is which.
 
 ---
 

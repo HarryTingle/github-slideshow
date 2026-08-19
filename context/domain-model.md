@@ -109,21 +109,75 @@ Director, far faster than cost plausibly does. That shape is why grade mix moves
 and why a "small discount" achieved by swapping a Director for a Senior Manager is a
 much larger concession than it looks.
 
-### Cost rates — still unknown
+### Cost rates
 
-**No cost data has been supplied.** The engine therefore derives a placeholder:
+**Source: resourcing model extract, given by Harry 2026-08-19.** Real. Asserted by test.
 
-`ASSUMPTION: fully-loaded cost is 50% of the standard day rate from Associate to Senior
-Manager, and 42% at Associate Director and Director — owner: Harry, raised: 2026-08-19.`
+| Grade | Charge | Cost | Gross margin |
+|---|---|---|---|
+| Associate | £525 | £342 | **34.9%** |
+| Senior Associate | £650 | £447 | 31.2% |
+| Consultant | £800 | £560 | 30.0% |
+| Senior Consultant | £900 | £677 | 24.8% |
+| Manager | £1,100 | £785 | 28.6% |
+| Senior Manager | £1,350 | £893 | 33.9% |
+| Associate Director | £2,000 | £1,460 | 27.0% |
+| Director | £2,500 | £1,988 | **20.5%** |
 
-A single stated ratio is used in place of eight individually plausible numbers on
-purpose: it is obviously a placeholder, auditable in one line, and does not pretend to
-encode knowledge of the cost base we do not have.
+**Margin falls as seniority rises, and it is not monotonic.** The Associate is the
+best-margin grade on the ladder and the Director the worst. Senior Consultant is the
+weakest grade below Director; Senior Manager recovers.
 
-**What this means for the app:** revenue is now correct for a given plan. **Margin is
-not.** Gross margin, downside cases, break-even overrun and the guardrail verdicts all
-depend on cost, and cost is invented. This is the single highest-value gap left in the
-model — see REVIEW Q15.
+Three consequences, all of which the tool should make visible:
+
+1. **A rich team is expensive in margin terms, not just in price.** Loading an
+   engagement with Directors raises revenue and lowers margin percentage.
+2. **Trading a Director down for a Senior Manager improves margin.** It is a price
+   concession that buys back margin — the opposite of the usual instinct, and worth
+   knowing before a negotiation rather than after.
+3. **Grade mix is a live commercial lever**, and one of the few available once a price
+   is fixed.
+
+This is recorded as a *finding*, not a preference: it comes from the card and it should
+be re-derived, not assumed, whenever the card changes. A test asserts the shape holds so
+that a future card which inverts it fails loudly rather than silently invalidating the
+guidance above.
+
+### Annual leave and available days
+
+**Source: same extract.** A resource line covering 31/08/2026 – 31/08/2027 shows:
+
+| Field | Value | Reading |
+|---|---|---|
+| Billable Days | 253 | 261 weekdays in the 12 months, less 8 public holidays |
+| Estimated AL | −23 | annual leave allowance |
+| Days | 253 | the figure carried forward |
+
+**253 − 23 = 230, but the sheet carries 253.** So the leave estimate is either applied
+somewhere downstream of this extract, or it is not applied at all. If it is not, planned
+capacity is overstated by 23/253 ≈ **9%**, and every fixed-price bid built on it is
+under-resourced by the same margin. → REVIEW Q19. This is exactly the class of error
+the product exists to catch, so it is worth resolving before anything else is read into
+the model.
+
+**How the engine treats it.** Annual leave is an allowance of 23 days per person-year,
+pro-rated to the weeks each person is actually on the engagement. Booked leave counts
+*against* the allowance rather than adding to it, and the remainder is spread across the
+weeks with no leave booked — a provision for leave not yet in the diary, not a
+prediction of when it will be taken. Unstaffed roles carry it too, or a gap would look
+cheaper and more available than the person who eventually fills it.
+
+`ASSUMPTION: annual leave is deducted from available days — owner: Harry, raised:
+2026-08-19.` Set `annualLeaveDays` to 0 if the billable-day figure already accounts for
+it; the app exposes this directly on the delivery plan.
+
+**Reconciliation.** The app shows a capacity basis on the plan page that annualises its
+own calendar: **253 days a year before leave, 230 after** — the same two numbers as the
+sheet, so the two models can be compared without argument.
+
+**Still unknown:** target utilisation (REVIEW Q3), and whether the 8 public holidays and
+23 days of leave vary by resource location — the extract is a UK line and carries a
+location column.
 
 At bid stage a plan is normally **role + grade** placeholders. Named people are attached later, or partially, or never. **The model must be valid with zero named people.**
 

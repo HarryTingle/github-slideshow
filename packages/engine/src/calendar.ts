@@ -12,10 +12,41 @@ export function availableDays(
   calendar: Calendar,
   week: WeekIndex,
   person?: Person,
+  /** Pro-rated annual leave for this week — see `leaveProvision`. */
+  leaveProvision = 0,
 ): Days {
   const holidays = calendar.publicHolidays?.[week] ?? 0;
-  const leave = person?.leave?.[week] ?? 0;
-  return Math.max(0, calendar.workingDaysPerWeek - holidays - leave);
+  const booked = person?.leave?.[week] ?? 0;
+  return Math.max(0, calendar.workingDaysPerWeek - holidays - booked - leaveProvision);
+}
+
+/** Weeks in a year, for pro-rating an annual allowance onto an engagement. */
+export const WEEKS_PER_YEAR = 52;
+
+/**
+ * Spread an annual leave allowance across the weeks somebody is actually on the job.
+ *
+ * Leave is granted annually but taken unpredictably, so a plan that counts only booked
+ * leave overstates capacity by roughly the whole allowance. The allowance is pro-rated
+ * to the weeks worked, whatever is already booked in those weeks is set against it, and
+ * the remainder is spread across the weeks that have no leave booked — a provision for
+ * the leave not yet in the diary, not a prediction of when it will be taken.
+ *
+ * The remainder deliberately avoids weeks that already carry booked leave. Adding a
+ * provision on top of a week somebody is already off would push availability below zero
+ * and be clamped away, quietly losing part of the allowance.
+ *
+ * Returns days to deduct from each week that has no booked leave.
+ */
+export function leaveProvision(
+  annualLeaveDays: Days,
+  weeksOnEngagement: number,
+  bookedDaysInThoseWeeks: number,
+  weeksWithNoBookedLeave: number,
+): Days {
+  if (annualLeaveDays <= 0 || weeksOnEngagement <= 0 || weeksWithNoBookedLeave <= 0) return 0;
+  const proRata = annualLeaveDays * (weeksOnEngagement / WEEKS_PER_YEAR);
+  return Math.max(0, proRata - bookedDaysInThoseWeeks) / weeksWithNoBookedLeave;
 }
 
 /** Linear ramp to full productivity over `rampWeeks`. 1 when no ramp is set. */

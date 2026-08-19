@@ -2,30 +2,20 @@ import { pounds } from './money';
 import type { Engagement } from './types';
 
 /**
- * ⚠️ HALF REAL. Read this before quoting anything.
+ * ⚠️ Real rate card, fictional engagement.
  *
- * **Real, and safe to rely on:**
- *  - the grade ladder and the capability list (`context/domain-model.md` §3)
- *  - the **charge rates** — the Solutions standard day rate card, given 2026-08-19
+ * **Real, sourced, and safe to rely on:**
+ *  - the grade ladder and capability list (`context/domain-model.md` §3)
+ *  - **charge and cost rates** for all eight grades, given 2026-08-19
+ *  - the 23-day annual leave allowance
  *
- * **Invented, and not safe to rely on:**
- *  - every **cost rate**, and therefore *every margin figure the app produces*
- *  - Meridian Retail Group, the plan, the client rate card, the contract values
+ * **Invented — do not quote:**
+ *  - Meridian Retail Group, the plan, the team, the client rate card, the contract
+ *    values, and the guardrail thresholds
  *
- * This is the most dangerous state the seed has been in. Revenue is now correct for a
- * given plan, which makes the margins beside it look equally sourced. They are not.
- * Margin is revenue minus cost, and cost is a placeholder.
- *
- * ASSUMPTION: fully-loaded cost is 50% of the standard day rate from Associate to
- * Senior Manager, and 42% at Associate Director and Director, where the rate step
- * reflects scarcity and seniority premium rather than a proportional cost step.
- * Owner: Harry. Raised: 2026-08-19.
- *
- * A single stated ratio is used deliberately in place of eight individually plausible
- * numbers: it is obviously a placeholder, it is auditable in one line, and it does not
- * pretend to encode knowledge of the cost base that we do not have. The cost of that
- * choice is that grade mix barely moves margin below Associate Director — which will
- * come alive the moment real cost rates arrive, and is a reason to get them.
+ * The rate card is now real on both sides, so margin percentages produced by this
+ * model are real *for a given plan*. The plan is not real, so the absolute figures are
+ * not either.
  *
  * Shape chosen to be representative rather than convenient: three phases, five
  * workstreams, part-time and ramped people, three deliberate resourcing gaps, and a
@@ -33,41 +23,39 @@ import type { Engagement } from './types';
  */
 
 /**
- * The practice's grade ladder.
+ * The practice's grade ladder and rate card. Both rates are real, given 2026-08-19.
  *
- * `chargeRate` is the **real** Solutions standard day rate card.
- * `costRate` is **invented** — derived from the charge rate by the stated ratio above,
- * so that it is obviously a placeholder rather than a number anyone might mistake for
- * sourced data.
+ * The implied gross margin is worth reading down the column, because it does not do
+ * what a rate card usually does:
+ *
+ *   Associate           34.9%   <- the best margin on the ladder
+ *   Senior Associate    31.2%
+ *   Consultant          30.0%
+ *   Senior Consultant   24.8%
+ *   Manager             28.6%
+ *   Senior Manager      33.9%
+ *   Associate Director  27.0%
+ *   Director            20.5%   <- the worst
+ *
+ * Margin falls as seniority rises, and it is not monotonic: Senior Consultant is the
+ * weakest grade below Director, and Senior Manager recovers. A rich team is therefore
+ * expensive in margin terms, and trading a Director down for a Senior Manager *improves*
+ * margin rather than conceding it. Grade mix is a live commercial lever here, in the
+ * opposite direction to the intuition a rate card alone suggests.
  */
-const COST_RATIO_STANDARD = 0.5;
-const COST_RATIO_SENIOR = 0.42;
-
-function grade(
-  id: string,
-  name: string,
-  order: number,
-  standardDayRate: number,
-  costRatio: number,
-) {
-  return {
-    id,
-    name,
-    order,
-    costRate: pounds(standardDayRate * costRatio),
-    chargeRate: pounds(standardDayRate),
-  };
+function grade(id: string, name: string, order: number, chargeRate: number, costRate: number) {
+  return { id, name, order, costRate: pounds(costRate), chargeRate: pounds(chargeRate) };
 }
 
 const GRADES = [
-  grade('g-associate', 'Associate', 1, 525, COST_RATIO_STANDARD),
-  grade('g-senior-associate', 'Senior Associate', 2, 650, COST_RATIO_STANDARD),
-  grade('g-consultant', 'Consultant', 3, 800, COST_RATIO_STANDARD),
-  grade('g-senior-consultant', 'Senior Consultant', 4, 900, COST_RATIO_STANDARD),
-  grade('g-manager', 'Manager', 5, 1100, COST_RATIO_STANDARD),
-  grade('g-senior-manager', 'Senior Manager', 6, 1350, COST_RATIO_STANDARD),
-  grade('g-associate-director', 'Associate Director', 7, 2000, COST_RATIO_SENIOR),
-  grade('g-director', 'Director', 8, 2500, COST_RATIO_SENIOR),
+  grade('g-associate', 'Associate', 1, 525, 342),
+  grade('g-senior-associate', 'Senior Associate', 2, 650, 447),
+  grade('g-consultant', 'Consultant', 3, 800, 560),
+  grade('g-senior-consultant', 'Senior Consultant', 4, 900, 677),
+  grade('g-manager', 'Manager', 5, 1100, 785),
+  grade('g-senior-manager', 'Senior Manager', 6, 1350, 893),
+  grade('g-associate-director', 'Associate Director', 7, 2000, 1460),
+  grade('g-director', 'Director', 8, 2500, 1988),
 ];
 
 /** The practice's capabilities. A capability is what someone does; a grade is how senior they are. */
@@ -87,6 +75,18 @@ export const meridian: Engagement = {
   startDate: '2026-09-07',
   weeks: 14,
   sprintWeeks: 2,
+  /**
+   * 23 days per person-year, given 2026-08-19, pro-rated across each person's weeks
+   * on the engagement.
+   *
+   * ASSUMPTION: annual leave is deducted from available days. The source sheet shows
+   * 253 billable days (261 weekdays less 8 public holidays) alongside an estimated
+   * 23 days of leave, and then carries 253 forward rather than 230 — so leave is either
+   * applied somewhere downstream or is not applied at all. Deducting it is the
+   * arithmetically correct treatment of capacity; set this to 0 if the 253 already
+   * accounts for it. Owner: Harry. Raised: 2026-08-19. → REVIEW Q19.
+   */
+  annualLeaveDays: 23,
   calendar: {
     workingDaysPerWeek: 5,
     // August bank holiday equivalent in week 8, and a company day in week 13.
@@ -105,7 +105,7 @@ export const meridian: Engagement = {
       // Two weeks of leave in the middle of the build — visible in the grid.
       leave: { 9: 5, 10: 5 },
     },
-    { id: 'p-moreau', name: 'J. Moreau', gradeId: 'g-senior-consultant', roleId: 'c-platform', costRate: pounds(470) },
+    { id: 'p-moreau', name: 'J. Moreau', gradeId: 'g-senior-consultant', roleId: 'c-platform' },
     { id: 'p-bello', name: 'S. Bello', gradeId: 'g-consultant', roleId: 'c-adi' },
     { id: 'p-ferreira', name: 'D. Ferreira', gradeId: 'g-senior-consultant', roleId: 'c-ai' },
     { id: 'p-nakamura', name: 'P. Nakamura', gradeId: 'g-manager', roleId: 'c-partners' },
@@ -184,7 +184,7 @@ export const meridian: Engagement = {
     {
       id: 'sc-fixed',
       name: 'Fixed price',
-      structure: { type: 'fixedPrice', contractValue: pounds(262000), contingencyPct: 0.15 },
+      structure: { type: 'fixedPrice', contractValue: pounds(247000), contingencyPct: 0.15 },
       notes: 'Single price for the agreed scope, 15% contingency held against overrun.',
     },
     {
@@ -192,33 +192,43 @@ export const meridian: Engagement = {
       name: 'Fixed + outcome share',
       structure: {
         type: 'outcomeShare',
-        baseFee: pounds(215000),
+        baseFee: pounds(200000),
         shape: 'benefitPct',
         sharePercent: 0.1,
         expectedBenefit: pounds(580000),
-        cap: pounds(305000),
+        cap: pounds(295000),
         contingencyPct: 0.15,
       },
-      notes: 'Lower base, 10% of measured forecasting benefit in year one, capped at £305k.',
+      notes: 'Lower base, 10% of measured forecasting benefit in year one, capped at £295k.',
     },
     {
       id: 'sc-hybrid',
       name: 'Hybrid — fixed discovery, T&M build',
       structure: { type: 'tm', rateCardId: 'rc-meridian' },
       structureByPhase: {
-        'ph-discovery': { type: 'fixedPrice', contractValue: pounds(37000), contingencyPct: 0.1 },
-        'ph-deploy': { type: 'fixedPrice', contractValue: pounds(31000), contingencyPct: 0.1 },
+        'ph-discovery': { type: 'fixedPrice', contractValue: pounds(38500), contingencyPct: 0.1 },
+        'ph-deploy': { type: 'fixedPrice', contractValue: pounds(28000), contingencyPct: 0.1 },
       },
       notes: 'Fixed price either end, T&M through the build where the scope is least certain.',
     },
   ],
+  /**
+   * INVENTED. The real thresholds and the real approval chain are unknown (REVIEW Q5).
+   *
+   * These were previously set against a placeholder cost base that implied a 50%-margin
+   * business. Against the real rate card the practice runs at 20–30%, so the old
+   * thresholds breached on every scenario at once and told the reader nothing. They are
+   * re-set here to sit inside the range the real card actually produces, which makes
+   * them discriminating again — but they remain guesses, and a guardrail that is wrong
+   * is worse than no guardrail, because it launders a bad deal through an approval.
+   */
   guardrails: [
     {
       id: 'gr-margin',
       label: 'Gross margin',
       metric: 'grossMarginPct',
       operator: 'gte',
-      threshold: 0.4,
+      threshold: 0.2,
       approver: 'Head of Consulting',
     },
     {
@@ -226,7 +236,7 @@ export const meridian: Engagement = {
       label: 'Downside margin',
       metric: 'downsideMarginPct',
       operator: 'gte',
-      threshold: 0.35,
+      threshold: 0.1,
       approver: 'SLT',
     },
     {
@@ -234,7 +244,7 @@ export const meridian: Engagement = {
       label: 'Discount against standard rates',
       metric: 'discountPct',
       operator: 'lte',
-      threshold: 0.12,
+      threshold: 0.1,
       approver: 'Head of Commercial',
     },
     {
@@ -242,7 +252,7 @@ export const meridian: Engagement = {
       label: 'Maximum cash exposure',
       metric: 'maxCashExposure',
       operator: 'lte',
-      threshold: pounds(60000),
+      threshold: pounds(75000),
       approver: 'Finance Director',
     },
   ],

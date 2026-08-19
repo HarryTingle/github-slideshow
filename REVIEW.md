@@ -47,6 +47,23 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-19 — Real cost rates and annual leave; a discrepancy worth resolving before anything else
+**Reviewed:** the resourcing model extract — charge and cost rates for all eight grades, billable days, and annual leave.
+
+**Outcome:** both sides of the rate card are now real and asserted by test. Margin percentages are real for a given plan. Annual leave is modelled as a 23-day allowance pro-rated to the weeks each person works, with booked leave counted against it rather than added to it.
+
+**A conclusion I got wrong yesterday, corrected.** On the charge-only card I wrote that the doubling between Senior Manager and Director meant "swapping a Director for a Senior Manager is a much larger concession than it looks". With real cost that is backwards. Margin *falls* as seniority rises — Associate 34.9%, Director 20.5% — so trading a Director down **improves** margin. That is a commercial conclusion, it was inferred from a rate card with the cost half missing, and it would have been repeated in front of a client. Half a rate card is not most of a rate card.
+
+**The finding that matters most.** The extract shows Billable Days 253, Estimated AL −23, and then carries **253** forward rather than 230. 253 reconciles exactly to 261 weekdays less 8 public holidays, so the 23 days are not inside it. Either leave is applied somewhere downstream of this extract, or it is not applied at all — in which case planned capacity is overstated by about **9%**, and every fixed-price bid built on it is under-resourced by the same margin. Raised as Q19. This is precisely the class of error in the pain statement, found on the first real resourcing artefact we have looked at.
+
+Rather than pick a side, the app models leave properly, exposes the allowance as an editable field, and prints a capacity basis on the plan page that annualises its own calendar to **253 days before leave and 230 after** — the same two numbers as the sheet, so the two models can be compared instead of argued about.
+
+**Guardrails re-set, and still invented.** The old thresholds (40% gross margin, 35% downside) were chosen against a placeholder cost base implying a 50%-margin business. The real card runs at 20–30%, so every scenario breached at once and the guardrails said nothing. They are now 20% / 10% / 10% / £75k — inside the range the real card produces, and therefore discriminating again. They remain guesses (Q5), and a wrong guardrail is worse than no guardrail because it launders a bad deal through an approval.
+
+**What the demo now shows, truthfully:** T&M at framework rates returns 20.7%; fixed price 22.0%; the hybrid 21.5%; and the outcome-share deal has the best expected margin at 25.2% and a downside that **loses money** at −9.3%. It is the only breach.
+
+**Quality note:** effort dropped 8.6% (283.9 → 259.6 days) the moment leave was applied. Any earlier figure quoted from this workspace is now wrong, which is worth remembering about every figure still in it.
+
 ### 2026-08-19 — Real charge rates in; margin still invented
 **Reviewed:** the Solutions standard day rate card, now loaded verbatim and asserted by test.
 
@@ -128,7 +145,6 @@ Live list. Move to *Resolved* with the answer and the date — do not delete.
 | # | Question | Why it blocks or bends the work | Owner | Raised |
 |---|---|---|---|---|
 | Q1 | Which real engagement becomes the reference model for the golden test? | Defines the true scope of M1 and the shape of the domain model. | Harry | 2026-08-18 |
-| Q2 | Are cost rates held per grade, per person, or both? | Changes the core data model. Per-person cost is more accurate but harder to source and more sensitive to share. | Harry | 2026-08-18 |
 | Q3 | What is the real utilisation assumption used in pricing today — and is it applied to cost, to capacity, or to both? | This is the most common source of error in bespoke Excel models. Getting it wrong makes every margin number wrong. | Harry | 2026-08-18 |
 | Q4 | How are outcome / ROI-share deals actually structured today? Percentage of measured benefit, gain-share against a baseline, or bonus on milestone? | M2 cannot model what we cannot define. Also the least standardised structure in the market. | Harry | 2026-08-18 |
 | Q5 | Who signs off a deal, against what thresholds? | Determines the SLT pack contents and the guardrail logic. | Harry | 2026-08-18 |
@@ -149,6 +165,8 @@ Live list. Move to *Resolved* with the answer and the date — do not delete.
 | Q0 | Is this repo workspace-only or workspace + app code? | Workspace and application code live together here. | 2026-08-18 |
 | Q0a | Internal tool or commercial product first? | Internal first, then productise. We are customer zero. | 2026-08-18 |
 | Q0b | What anchors milestone one? | A correct, tested modelling engine. | 2026-08-18 |
+| Q2 | Are cost rates held per grade, per person, or both? | Per grade. The engine keeps a per-person override for people paid off-band. | 2026-08-19 |
+| Q15 | What are the real cost rates by grade? | Received. Associate £342 to Director £1,988. | 2026-08-19 |
 | Q6a | Are capability and grade independent axes, or one ladder? | Independent. Two separate lists supplied, 8 grades × 6 capabilities. | 2026-08-19 |
 
 ---

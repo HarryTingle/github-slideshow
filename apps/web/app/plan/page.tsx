@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  capacityBasis,
   formatDays,
   formatMoney,
   setSprintWeeks,
@@ -19,6 +20,7 @@ export default function PlanPage() {
   const { stressed, analysis, findings, update } = useModel();
 
   const fte = Array.from({ length: stressed.weeks }, (_, i) => analysis.plan.fteByWeek.get(i + 1) ?? 0);
+  const basis = capacityBasis(stressed);
   const gaps = stressed.assignments.filter((assignment) => !assignment.personId);
 
   return (
@@ -60,7 +62,7 @@ export default function PlanPage() {
           label="Cost of delivery"
           value={formatMoney(analysis.plan.directCost)}
           small
-          foot="Direct cost, at placeholder rates"
+          foot="Direct delivery cost"
         />
       </div>
 
@@ -97,6 +99,26 @@ export default function PlanPage() {
               />
               <span className="hint">Weeks. Will not shrink below the work planned.</span>
             </div>
+            <div className="field" style={{ maxWidth: 130 }}>
+              <label>Annual leave</label>
+              <input
+                type="number"
+                min={0}
+                max={60}
+                aria-label="Annual leave days per person-year"
+                value={stressed.annualLeaveDays ?? 0}
+                onChange={(event) =>
+                  update((draft) => ({
+                    ...draft,
+                    annualLeaveDays: Math.max(0, Number.parseInt(event.target.value, 10) || 0),
+                  }))
+                }
+              />
+              <span className="hint">
+                Days per person-year, pro-rated across each person&apos;s weeks. Set to 0 if
+                your billable-day figure already accounts for it.
+              </span>
+            </div>
             <div className="field" style={{ maxWidth: 110 }}>
               <label>Sprint length</label>
               <input
@@ -112,6 +134,16 @@ export default function PlanPage() {
               <span className="hint">Weeks per sprint.</span>
             </div>
           </div>
+          <p className="tiny muted" style={{ margin: '0 0 20px' }}>
+            <strong style={{ color: 'var(--ink-700)', fontWeight: 500 }}>Capacity basis.</strong>{' '}
+            A full-time person supplies {formatDays(basis.availableDays)} days across these{' '}
+            {basis.weeks} weeks — {formatDays(basis.workingDays, 0)} working days, less{' '}
+            {formatDays(basis.publicHolidayDays, 0)} public holiday and{' '}
+            {formatDays(basis.annualLeaveDays)} leave. Annualised that is{' '}
+            {formatDays(basis.annualisedAvailableDays, 0)} days a year, against{' '}
+            {formatDays(basis.annualisedBeforeLeave, 0)} before leave — compare with the
+            billable-day figure your resourcing model uses.
+          </p>
           <Timeline engagement={stressed} />
         </div>
       </div>

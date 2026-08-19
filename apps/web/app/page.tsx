@@ -91,7 +91,7 @@ export default function OverviewPage() {
         <Stat
           label="Cost of delivery"
           value={formatMoney(metrics.cost)}
-          foot="Placeholder cost rates — every margin below is provisional"
+          foot="At the practice's real cost rates"
         />
         <Stat
           label="Gross margin"

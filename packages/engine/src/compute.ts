@@ -1,4 +1,4 @@
-import { activeWeeks, availableDays, rampFactor } from './calendar';
+import { WEEKS_PER_YEAR, activeWeeks, availableDays, leaveProvision, rampFactor } from './calendar';
 import { multiplyRate, ratio } from './money';
 import type {
   Assignment,
@@ -26,6 +26,8 @@ export interface EffortLine {
   week: WeekIndex;
   /** Working days less holidays and leave, before allocation. */
   availableDays: Days;
+  /** Pro-rated annual leave deducted from this week. */
+  leaveProvision: Days;
   rampFactor: number;
   allocation: number;
   effortDays: Days;
@@ -95,6 +97,35 @@ export function computePlan(engagement: Engagement, rateCardId?: string): Comput
     ? engagement.rateCards.find((card) => card.id === rateCardId)
     : undefined;
 
+  // Annual leave is granted per person-year, so it has to be pro-rated against the
+  // weeks each capacity holder is actually on this engagement before any line is
+  // costed. An unstaffed role gets the same treatment as a named person — otherwise a
+  // role placeholder would look cheaper and more available than the person who ends up
+  // filling it, and the plan would flatter itself right up until it was staffed.
+  const weeksByHolder = new Map<string, Set<WeekIndex>>();
+  for (const assignment of engagement.assignments) {
+    const holder = assignment.personId ?? `unstaffed:${assignment.id}`;
+    const weeks = weeksByHolder.get(holder) ?? new Set<WeekIndex>();
+    for (const week of activeWeeks(assignment.startWeek, assignment.endWeek, engagement.weeks)) {
+      weeks.add(week);
+    }
+    weeksByHolder.set(holder, weeks);
+  }
+
+  const provisionByHolder = new Map<string, Days>();
+  for (const [holder, weeks] of weeksByHolder) {
+    const person = people.get(holder);
+    const allowance = person?.annualLeaveDays ?? engagement.annualLeaveDays ?? 0;
+    let booked = 0;
+    let weeksFree = 0;
+    for (const week of weeks) {
+      const bookedThisWeek = person?.leave?.[week] ?? 0;
+      booked += bookedThisWeek;
+      if (bookedThisWeek === 0) weeksFree += 1;
+    }
+    provisionByHolder.set(holder, leaveProvision(allowance, weeks.size, booked, weeksFree));
+  }
+
   const lines: EffortLine[] = [];
   const effortByWeek = new Map<WeekIndex, Days>();
   const costByWeek = new Map<WeekIndex, Money>();
@@ -118,8 +149,12 @@ export function computePlan(engagement: Engagement, rateCardId?: string): Comput
     const chargeRate = chargeRateFor(assignment, grades, rateCard);
     const standardRate = grades.get(assignment.gradeId)?.chargeRate ?? 0;
 
+    const holderProvision = provisionByHolder.get(assignment.personId ?? `unstaffed:${assignment.id}`) ?? 0;
+
     for (const week of activeWeeks(assignment.startWeek, assignment.endWeek, engagement.weeks)) {
-      const available = availableDays(engagement.calendar, week, person);
+      // No provision in a week already carrying booked leave — see `leaveProvision`.
+      const provision = (person?.leave?.[week] ?? 0) > 0 ? 0 : holderProvision;
+      const available = availableDays(engagement.calendar, week, person, provision);
       const ramp = rampFactor(week, assignment.startWeek, assignment.rampWeeks);
       const allocation = assignment.allocationByWeek?.[week] ?? assignment.allocation;
       const effortDays = allocation * available * ramp;
@@ -140,6 +175,7 @@ export function computePlan(engagement: Engagement, rateCardId?: string): Comput
         personId: assignment.personId,
         week,
         availableDays: available,
+        leaveProvision: provision,
         rampFactor: ramp,
         allocation,
         effortDays,
@@ -212,4 +248,48 @@ export function burnCurve(plan: ComputedPlan, weeks: number): Money[] {
     curve.push(cumulative);
   }
   return curve;
+}
+
+/**
+ * How many days a full-time person actually supplies, and where the rest went.
+ *
+ * Exists so the model can be reconciled against a resourcing spreadsheet line by line —
+ * "you say 253 billable days a year, we say this" — rather than argued about. The
+ * annualised figure scales the engagement's own calendar to a 52-week year, so it is
+ * directly comparable with an annual capacity figure.
+ */
+export interface CapacityBasis {
+  weeks: number;
+  workingDays: number;
+  publicHolidayDays: number;
+  annualLeaveDays: Days;
+  availableDays: Days;
+  /** The same calendar expressed over a full year, for comparison with an annual figure. */
+  annualisedAvailableDays: Days;
+  annualisedBeforeLeave: Days;
+}
+
+export function capacityBasis(engagement: Engagement): CapacityBasis {
+  const weeks = Math.max(1, engagement.weeks);
+  const workingDays = engagement.calendar.workingDaysPerWeek * weeks;
+
+  let publicHolidayDays = 0;
+  for (let week = 1; week <= weeks; week++) {
+    publicHolidayDays += engagement.calendar.publicHolidays?.[week] ?? 0;
+  }
+
+  const allowance = engagement.annualLeaveDays ?? 0;
+  const annualLeaveDays = allowance * (weeks / WEEKS_PER_YEAR);
+  const availableDays = Math.max(0, workingDays - publicHolidayDays - annualLeaveDays);
+  const yearScale = WEEKS_PER_YEAR / weeks;
+
+  return {
+    weeks,
+    workingDays,
+    publicHolidayDays,
+    annualLeaveDays,
+    availableDays,
+    annualisedAvailableDays: availableDays * yearScale,
+    annualisedBeforeLeave: (workingDays - publicHolidayDays) * yearScale,
+  };
 }

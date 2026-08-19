@@ -73,10 +73,11 @@ describe('editing a cell outside the current range', () => {
   });
 
   it('adds exactly the effort the user typed and no more', () => {
-    const before = effort();
-    const next = setAllocation(meridian, 'a5', 14, 0.5);
-    // Week 14 has 5 working days and no holiday: 0.5 × 5 = 2.5 days.
-    expect(effort(next) - before).toBeCloseTo(2.5, 6);
+    // Leave off, so the arithmetic is checkable by hand: week 14 has 5 working days and
+    // no public holiday, so 0.5 FTE buys 0.5 × 5 = 2.5 days.
+    const noLeave = { ...meridian, annualLeaveDays: 0 };
+    const before = effort(noLeave);
+    expect(effort(setAllocation(noLeave, 'a5', 14, 0.5)) - before).toBeCloseTo(2.5, 6);
   });
 
   it('clamps a wild value rather than accepting it', () => {
@@ -239,10 +240,17 @@ describe('changing a level', () => {
   });
 
   it('leaves a named person on their own cost rate', () => {
-    // J. Moreau costs £470/day whatever grade he is booked at — his salary is his salary.
-    const next = setAssignmentGrade(meridian, 'a5', 'g-associate');
+    // Someone paid above their band costs what they cost, whatever grade they are
+    // booked at. The charge rate follows the grade; the cost does not.
+    const withPersonalRate: Engagement = {
+      ...meridian,
+      people: meridian.people.map((person) =>
+        person.id === 'p-moreau' ? { ...person, costRate: 74000 } : person,
+      ),
+    };
+    const next = setAssignmentGrade(withPersonalRate, 'a5', 'g-associate');
     const line = computePlan(next).lines.find((l) => l.assignmentId === 'a5')!;
-    expect(line.costRate).toBe(47000);
+    expect(line.costRate).toBe(74000);
     expect(line.chargeRate).toBe(52500); // Associate standard day rate, £525
   });
 });

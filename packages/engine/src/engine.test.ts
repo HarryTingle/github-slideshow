@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { availableDays, rampFactor } from './calendar';
 import { computeScenario, computeStructure, maxCashExposure, sliceOf } from './commercial';
-import { computePlan } from './compute';
+import { capacityBasis, computePlan } from './compute';
 import { analyse, applySensitivity, computeMetrics } from './metrics';
 import { pounds, ratio, toMoney } from './money';
 import { meridian } from './seed';
@@ -68,6 +68,100 @@ describe('availability', () => {
   });
 });
 
+describe('annual leave', () => {
+  const WEEKS = 26;
+  function withLeave(annualLeaveDays: number, personLeave?: Record<number, number>): Engagement {
+    return {
+      id: 'e', name: 'Leave', client: 'Test', startDate: '2026-01-05', weeks: WEEKS,
+      annualLeaveDays,
+      calendar: { workingDaysPerWeek: 5 },
+      grades: [{ id: 'g', name: 'Consultant', order: 3, costRate: pounds(560), chargeRate: pounds(800) }],
+      roles: [{ id: 'r', name: 'Platform Engineering' }],
+      people: [{ id: 'p', name: 'A. Person', gradeId: 'g', roleId: 'r', leave: personLeave }],
+      phases: [{ id: 'ph', name: 'Build', order: 1, startWeek: 1, endWeek: WEEKS }],
+      workstreams: [{ id: 'ws', name: 'Platform', phaseId: 'ph', startWeek: 1, endWeek: WEEKS }],
+      milestones: [],
+      assignments: [
+        { id: 'a', workstreamId: 'ws', roleId: 'r', gradeId: 'g', personId: 'p', startWeek: 1, endWeek: WEEKS, allocation: 1 },
+      ],
+      rateCards: [],
+      scenarios: [{ id: 's', name: 'T&M', structure: { type: 'tm' } }],
+      guardrails: [],
+    };
+  }
+
+  it('pro-rates the allowance to the weeks actually worked', () => {
+    // 26 weeks is half a year, so half of a 23-day allowance: 11.5 days.
+    const full = computePlan(withLeave(0)).totalEffortDays;
+    const withAl = computePlan(withLeave(23)).totalEffortDays;
+    expect(full - withAl).toBeCloseTo(11.5, 6);
+  });
+
+  it('sets booked leave against the allowance rather than adding to it', () => {
+    // 5 days booked in week 3, out of an 11.5-day pro-rata entitlement. The total
+    // deduction should still be 11.5 — the provision covers only the remainder.
+    const booked = computePlan(withLeave(23, { 3: 5 })).totalEffortDays;
+    const unbooked = computePlan(withLeave(23)).totalEffortDays;
+    expect(booked).toBeCloseTo(unbooked, 6);
+  });
+
+  it('does not claw back capacity when more leave is booked than the allowance', () => {
+    const heavy = computePlan(withLeave(23, { 3: 5, 4: 5, 5: 5 })).totalEffortDays;
+    const full = computePlan(withLeave(0)).totalEffortDays;
+    expect(full - heavy).toBeCloseTo(15, 6);
+  });
+
+  it('is off when the allowance is zero', () => {
+    const plan = computePlan(withLeave(0));
+    expect(plan.lines.every((line) => line.leaveProvision === 0)).toBe(true);
+    expect(plan.lines.every((line) => line.availableDays === 5)).toBe(true);
+  });
+
+  it('applies to an unstaffed role too, so a gap is not cheaper than the person filling it', () => {
+    const staffed = withLeave(23);
+    const unstaffed: Engagement = {
+      ...staffed,
+      assignments: staffed.assignments.map(({ personId, ...rest }) => rest),
+    };
+    expect(computePlan(unstaffed).totalEffortDays).toBeCloseTo(
+      computePlan(staffed).totalEffortDays,
+      6,
+    );
+  });
+
+  it('lets one person carry a different allowance from the rest', () => {
+    const standard = withLeave(23);
+    const generous: Engagement = {
+      ...standard,
+      people: standard.people.map((person) => ({ ...person, annualLeaveDays: 46 })),
+    };
+    expect(computePlan(generous).totalEffortDays).toBeLessThan(
+      computePlan(standard).totalEffortDays,
+    );
+  });
+});
+
+describe('capacity basis', () => {
+  it('reconciles against an annual billable-day figure', () => {
+    const basis = capacityBasis(meridian);
+    // The source sheet quotes 253 billable days a year — 261 weekdays less 8 public
+    // holidays — and 23 days of leave against it. Our calendar is expressed weekly, so
+    // annualising it should land in the same neighbourhood, and the gap between the two
+    // annualised figures should be the leave allowance.
+    expect(basis.annualisedBeforeLeave - basis.annualisedAvailableDays).toBeCloseTo(23, 6);
+    expect(basis.annualisedAvailableDays).toBeGreaterThan(220);
+    expect(basis.annualisedAvailableDays).toBeLessThan(245);
+  });
+
+  it('accounts for every day between the working week and what is left', () => {
+    const basis = capacityBasis(meridian);
+    expect(basis.workingDays - basis.publicHolidayDays - basis.annualLeaveDays).toBeCloseTo(
+      basis.availableDays,
+      6,
+    );
+  });
+});
+
 describe('spec 0001 worked example', () => {
   const engagement = workedExample();
   const plan = computePlan(engagement);
@@ -103,22 +197,24 @@ describe('spec 0001 worked example', () => {
 describe('the Solutions standard rate card', () => {
   // These are the practice's real charge rates. A change here is a change to a sourced
   // figure and should never happen by accident.
-  const CARD: [string, number][] = [
-    ['Associate', 525],
-    ['Senior Associate', 650],
-    ['Consultant', 800],
-    ['Senior Consultant', 900],
-    ['Manager', 1100],
-    ['Senior Manager', 1350],
-    ['Associate Director', 2000],
-    ['Director', 2500],
+  const CARD: [string, number, number][] = [
+    // grade, charge, cost
+    ['Associate', 525, 342],
+    ['Senior Associate', 650, 447],
+    ['Consultant', 800, 560],
+    ['Senior Consultant', 900, 677],
+    ['Manager', 1100, 785],
+    ['Senior Manager', 1350, 893],
+    ['Associate Director', 2000, 1460],
+    ['Director', 2500, 1988],
   ];
 
-  it('is loaded exactly as given', () => {
-    for (const [name, dayRate] of CARD) {
+  it('is loaded exactly as given, on both sides', () => {
+    for (const [name, charge, cost] of CARD) {
       const grade = meridian.grades.find((candidate) => candidate.name === name);
       expect(grade, `missing grade ${name}`).toBeDefined();
-      expect(grade!.chargeRate).toBe(pounds(dayRate));
+      expect(grade!.chargeRate, `${name} charge`).toBe(pounds(charge));
+      expect(grade!.costRate, `${name} cost`).toBe(pounds(cost));
     }
   });
 
@@ -127,14 +223,19 @@ describe('the Solutions standard rate card', () => {
     expect(meridian.grades.map((grade) => grade.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
-  it('holds cost rates that are placeholders, not data', () => {
-    // Cost is a stated ratio of charge — 50% to Senior Manager, 42% above. If this ever
-    // stops holding, someone has invented a cost base, and every margin in the app is
-    // then a fabrication wearing the authority of the real rate card.
-    for (const grade of meridian.grades) {
-      const ratio = grade.costRate / grade.chargeRate;
-      expect(ratio).toBeCloseTo(grade.order >= 7 ? 0.42 : 0.5, 6);
-    }
+  it('gets weaker on margin as seniority rises — the opposite of the usual intuition', () => {
+    const marginOf = (name: string) => {
+      const grade = meridian.grades.find((candidate) => candidate.name === name)!;
+      return (grade.chargeRate - grade.costRate) / grade.chargeRate;
+    };
+    // Not a stylistic assertion: this is the shape that makes grade mix a live
+    // commercial lever, and it drives the advice the comparison view gives. If a future
+    // rate card inverts it, the guidance in the seed and in /context is wrong and needs
+    // rewriting, so failing here is the correct outcome.
+    expect(marginOf('Director')).toBeLessThan(marginOf('Associate'));
+    expect(marginOf('Director')).toBeLessThan(marginOf('Senior Manager'));
+    expect(marginOf('Associate')).toBeGreaterThan(0.3);
+    expect(marginOf('Director')).toBeLessThan(0.25);
   });
 });
 

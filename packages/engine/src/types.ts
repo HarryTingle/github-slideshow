@@ -45,8 +45,10 @@ export interface Person {
   roleId: string;
   /** Overrides the grade cost rate when present. Cost only — never charge. */
   costRate?: Money;
-  /** Days of leave, by week index. */
+  /** Specific, booked leave, by week index. Counts against the annual allowance. */
   leave?: Record<WeekIndex, Days>;
+  /** Overrides the engagement's annual leave allowance for this person. */
+  annualLeaveDays?: Days;
 }
 
 export interface Calendar {
@@ -165,6 +167,12 @@ export interface Engagement {
   weeks: number;
   /** Weeks per sprint, for the sprint ruler above the allocation grid. */
   sprintWeeks?: number;
+  /**
+   * Annual leave allowance in days per person-year. Pro-rated across each person's
+   * weeks on the engagement and deducted from availability. Booked leave counts
+   * against it rather than adding to it. Set to 0 to switch the deduction off.
+   */
+  annualLeaveDays?: Days;
   calendar: Calendar;
   grades: Grade[];
   roles: Role[];

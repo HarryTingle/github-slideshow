@@ -75,10 +75,9 @@ export function Findings({ findings }: { findings: Finding[] }) {
 /**
  * The provenance marker. Present wherever numbers are, on purpose.
  *
- * It is deliberately specific rather than a general "demo data" note. Charge rates are
- * now the real card, so revenue is right for a given plan — which makes the margins
- * next to it look equally sourced. They are not: cost rates are placeholders, and
- * margin is revenue minus cost.
+ * Deliberately specific rather than a general "demo data" note: the rate card is real
+ * on both sides now, so margin percentages are real for a given plan. The plan is not,
+ * so the absolute figures are not either.
  */
 export function FictionPill() {
   const { isDirty } = useModel();
@@ -86,14 +85,14 @@ export function FictionPill() {
     <span
       className="pill-fiction"
       title={
-        'Charge rates are the real Solutions standard day rate card. ' +
-        'Cost rates are placeholders (a stated ratio of charge), so every margin, ' +
-        'downside and break-even figure is provisional. The engagement itself — ' +
-        'Meridian Retail Group, the plan, the client rate card, the contract values — ' +
-        'is invented.'
+        'Charge and cost rates are the practice’s real card, and annual leave is the ' +
+        'real 23-day allowance. Margin percentages are therefore real for a given ' +
+        'plan. The engagement is invented — Meridian Retail Group, the team, the ' +
+        'client rate card, the contract values and the guardrail thresholds are all ' +
+        'made up, so no absolute figure here may be quoted.'
       }
     >
-      Charge rates real · cost placeholder{isDirty ? ' · edited' : ''}
+      Real rate card · fictional engagement{isDirty ? ' · edited' : ''}
     </span>
   );
 }

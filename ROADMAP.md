@@ -22,7 +22,7 @@ Establish the operating system for the work and extract the real domain model fr
 
 - [x] Workspace scaffold: `CLAUDE.md`, `ROADMAP.md`, `REVIEW.md`, `/context`, `/customers`, `/specs`, `/demos`, `/routines`
 - [ ] Ingest existing Excel delivery & commercial models into `/context/inputs` → run `routines/model-intake.md`
-- [ ] Ingest rate card and role/seniority taxonomy → produces the canonical grade structure in `context/domain-model.md`
+- [x] Ingest rate card and role/seniority taxonomy → grade ladder, capabilities, charge and cost rates, annual leave, all in `context/domain-model.md` §3 and asserted by test
 - [ ] Ingest brand guidelines and proposal templates → constrains output design in M3
 - [ ] Confirm stack and architecture decision (`context/decisions/0002-stack-and-architecture.md`)
 - [ ] Pick the reference engagement: one real, recently-run engagement whose model the app must reproduce exactly
