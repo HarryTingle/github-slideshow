@@ -12,6 +12,7 @@ import Overview from '../app/page';
 import Plan from '../app/plan/page';
 import Commercials from '../app/commercials/page';
 import Outputs from '../app/outputs/page';
+import { FictionPill } from '../components/bits';
 import { ResetButton } from '../components/ResetButton';
 
 const ROUTES = [
@@ -41,6 +42,7 @@ function App() {
             <span className="brand-mark">Scope</span>
             <span className="brand-sub">Delivery &amp; commercials</span>
           </a>
+          <FictionPill />
           <ResetButton />
           <nav className="nav">
             {ROUTES.map((entry) => (

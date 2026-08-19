@@ -3,15 +3,15 @@
 import { formatDays, formatMoney, formatPct, weekStartLabel } from '@scope/engine';
 import { useState } from 'react';
 import { CumulativeChart, RankBars } from '@/components/charts';
-import { FictionPill, GuardrailRow, MarginTone } from '@/components/bits';
+import { GuardrailRow, MarginTone } from '@/components/bits';
 import { useModel, useSelectedScenario } from '@/lib/store';
 
 type View = 'resourcing' | 'client' | 'slt';
 
-const VIEWS: { id: View; label: string; audience: string }[] = [
-  { id: 'resourcing', label: 'Resourcing', audience: 'For the resourcing team — who, when, and what is still to fill.' },
-  { id: 'client', label: 'Client', audience: 'For the proposal. No cost, no margin, no internal grades, no other scenarios.' },
-  { id: 'slt', label: 'SLT sign-off', audience: 'For the approver — every scenario, including the ones not recommended.' },
+const VIEWS: { id: View; label: string }[] = [
+  { id: 'resourcing', label: 'Resourcing' },
+  { id: 'client', label: 'Client' },
+  { id: 'slt', label: 'SLT sign-off' },
 ];
 
 export default function OutputsPage() {
@@ -21,20 +21,6 @@ export default function OutputsPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <div className="eyebrow">Outputs</div>
-          <h1>One model, three audiences</h1>
-          <p className="lede">
-            Generated from the same numbers, so they cannot disagree with each other. The client
-            view is built so that cost and margin are structurally absent, not merely hidden.
-          </p>
-        </div>
-        <div className="head-actions">
-          <FictionPill />
-        </div>
-      </div>
-
       <div className="row gap-16 wrap" style={{ marginBottom: 18 }}>
         <div className="segmented">
           {VIEWS.map((entry) => (
@@ -43,7 +29,6 @@ export default function OutputsPage() {
             </button>
           ))}
         </div>
-        <span className="small muted">{VIEWS.find((entry) => entry.id === view)?.audience}</span>
       </div>
 
       {view === 'resourcing' && <ResourcingView />}
@@ -51,9 +36,8 @@ export default function OutputsPage() {
       {view === 'slt' && <SltView />}
 
       <p className="tiny muted mt-24" style={{ marginTop: 24 }}>
-        Generated from {stressed.name} · {analysis.plan.totalEffortDays.toFixed(1)} effort days ·
-        scenario “{selected.scenario.name}”. In the built product these are snapshots with a
-        recorded version, so an issued pack does not change when the model is edited afterwards.
+        {stressed.name} · {analysis.plan.totalEffortDays.toFixed(1)} effort days · “
+        {selected.scenario.name}”
       </p>
     </>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { formatMoney, formatPct, type Engagement } from '@scope/engine';
-import { FictionPill, GuardrailRow, MarginTone } from '@/components/bits';
+import { GuardrailRow, MarginTone } from '@/components/bits';
 import { ScenarioEditor } from '@/components/ScenarioEditor';
 import { scenarioColour, useModel } from '@/lib/store';
 
@@ -48,21 +48,6 @@ export default function CommercialsPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <div className="eyebrow">Commercials</div>
-          <h1>Same plan. Different deals.</h1>
-          <p className="lede">
-            The delivery plan is untouched by everything on this page — effort and cost are
-            identical across every scenario. Only the shape of the deal moves.
-          </p>
-        </div>
-        <div className="head-actions">
-          <button onClick={fork}>Fork scenario</button>
-          <FictionPill />
-        </div>
-      </div>
-
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="card-head">
           <h3>Sensitivity</h3>
@@ -87,9 +72,7 @@ export default function CommercialsPage() {
                   setSensitivity({ ...sensitivity, slipWeeks: Number.parseInt(event.target.value, 10) })
                 }
               />
-              <span className="hint">
-                Extends every assignment. Fixed price absorbs it; T&amp;M does not.
-              </span>
+              <span className="hint">Fixed price absorbs it; T&amp;M does not.</span>
             </div>
             <div className="field">
               <label>Extra discount {(sensitivity.extraDiscountPct * 100).toFixed(0)}%</label>
@@ -105,7 +88,7 @@ export default function CommercialsPage() {
                   })
                 }
               />
-              <span className="hint">Applied to charge rates. Fixed-price deals are unaffected.</span>
+              <span className="hint">Charge rates only; fixed price is unaffected.</span>
             </div>
           </div>
           {stressActive && (
@@ -124,9 +107,12 @@ export default function CommercialsPage() {
         <div className="card-head">
           <h3>Comparison</h3>
           <span className="card-note">
-            {analysis.scenarios.length} scenarios · {analysis.plan.totalEffortDays.toFixed(1)} effort
-            days · {formatMoney(selected.metrics.cost)} cost, unchanged throughout
+            {analysis.plan.totalEffortDays.toFixed(1)} effort days ·{' '}
+            {formatMoney(selected.metrics.cost)} cost, unchanged throughout
           </span>
+          <button className="tiny" style={{ marginLeft: 14 }} onClick={fork}>
+            Fork scenario
+          </button>
         </div>
         <div className="card-body flush">
           <div className="table-scroll">

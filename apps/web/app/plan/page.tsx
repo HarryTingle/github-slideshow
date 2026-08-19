@@ -12,7 +12,7 @@ import {
 } from '@scope/engine';
 import { AllocationGrid } from '@/components/AllocationGrid';
 import { DemandBars } from '@/components/charts';
-import { FictionPill, Findings, Stat } from '@/components/bits';
+import { Findings, Stat } from '@/components/bits';
 import { Timeline } from '@/components/Timeline';
 import { useModel } from '@/lib/store';
 
@@ -25,20 +25,6 @@ export default function PlanPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <div className="eyebrow">Delivery plan &amp; resourcing</div>
-          <h1>How the work runs, and who runs it</h1>
-          <p className="lede">
-            Phases, workstreams and milestones, then the team laid over the top. The plan is
-            valid and fully costed with nobody named — roles first, people later.
-          </p>
-        </div>
-        <div className="head-actions">
-          <FictionPill />
-        </div>
-      </div>
-
       {reconciliation.length > 0 && (
         <div className="card" style={{ marginBottom: 18, borderColor: 'var(--terracotta-200)' }}>
           <div className="card-body">
@@ -110,7 +96,6 @@ export default function PlanPage() {
                 value={stressed.startDate}
                 onChange={(event) => update((draft) => setStartDate(draft, event.target.value))}
               />
-              <span className="hint">Every week label follows it. The plan itself does not move.</span>
             </div>
             <div className="field" style={{ maxWidth: 110 }}>
               <label>Duration</label>
@@ -123,7 +108,6 @@ export default function PlanPage() {
                   update((draft) => setWeeks(draft, Number.parseInt(event.target.value, 10) || 1))
                 }
               />
-              <span className="hint">Weeks. Will not shrink below the work planned.</span>
             </div>
             <div className="field" style={{ maxWidth: 130 }}>
               <label>Annual leave</label>
@@ -140,10 +124,6 @@ export default function PlanPage() {
                   }))
                 }
               />
-              <span className="hint">
-                Days per person-year, pro-rated across each person&apos;s weeks. Set to 0 if
-                your billable-day figure already accounts for it.
-              </span>
             </div>
             <div className="field" style={{ maxWidth: 110 }}>
               <label>Sprint length</label>
@@ -157,18 +137,14 @@ export default function PlanPage() {
                   update((draft) => setSprintWeeks(draft, Number.parseInt(event.target.value, 10) || 1))
                 }
               />
-              <span className="hint">Weeks per sprint.</span>
             </div>
           </div>
           <p className="tiny muted" style={{ margin: '0 0 20px' }}>
-            <strong style={{ color: 'var(--ink-700)', fontWeight: 500 }}>Capacity basis.</strong>{' '}
-            A full-time person supplies {formatDays(basis.availableDays)} days across these{' '}
-            {basis.weeks} weeks — {formatDays(basis.workingDays, 0)} working days, less{' '}
-            {formatDays(basis.publicHolidayDays, 0)} public holiday and{' '}
-            {formatDays(basis.annualLeaveDays)} leave. Annualised that is{' '}
-            {formatDays(basis.annualisedAvailableDays, 0)} days a year, against{' '}
-            {formatDays(basis.annualisedBeforeLeave, 0)} before leave — compare with the
-            billable-day figure your resourcing model uses.
+            Full-time capacity: {formatDays(basis.availableDays)} days across {basis.weeks}{' '}
+            weeks ({formatDays(basis.workingDays, 0)} working, less{' '}
+            {formatDays(basis.publicHolidayDays, 0)} holiday and {formatDays(basis.annualLeaveDays)}{' '}
+            leave) · annualised {formatDays(basis.annualisedAvailableDays, 0)} days,{' '}
+            {formatDays(basis.annualisedBeforeLeave, 0)} before leave
           </p>
           <Timeline engagement={stressed} />
         </div>
@@ -187,9 +163,8 @@ export default function PlanPage() {
               weekLabel={(week) => `Week ${week} · ${weekStartLabel(stressed.startDate, week)}`}
             />
             <p className="tiny muted" style={{ margin: '10px 0 0' }}>
-              The dashed line is a stated resourcing constraint of 5 FTE. Peak demand of{' '}
-              {analysis.plan.peakHeadcount.toFixed(1)} FTE sits above it — a feasibility question
-              for resourcing, not a modelling error.
+              Dashed line: a 5 FTE resourcing constraint. Peak demand is{' '}
+              {analysis.plan.peakHeadcount.toFixed(1)} FTE.
             </p>
           </div>
         </div>

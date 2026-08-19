@@ -2,7 +2,7 @@
 
 import { formatDays, formatMoney, formatPct, weekStartLabel } from '@scope/engine';
 import { CashChart, CumulativeChart, RankBars } from '@/components/charts';
-import { FictionPill, Findings, GuardrailRow, MarginTone, Stat } from '@/components/bits';
+import { Findings, GuardrailRow, MarginTone, Stat } from '@/components/bits';
 import { useModel, useSelectedScenario } from '@/lib/store';
 
 export default function OverviewPage() {
@@ -48,9 +48,6 @@ export default function OverviewPage() {
             {stressed.workstreams.length} workstreams · {formatDays(metrics.totalEffortDays)} effort
             days · peak {analysis.plan.peakHeadcount.toFixed(1)} FTE
           </p>
-        </div>
-        <div className="head-actions">
-          <FictionPill />
         </div>
       </div>
 
@@ -161,8 +158,7 @@ export default function OverviewPage() {
           <div className="card-body">
             <CashChart values={cash.map((point) => point.position)} weekLabel={weekLabel} />
             <p className="tiny muted mt-8" style={{ margin: '8px 0 0' }}>
-              Cost is incurred weekly as payroll; cash arrives {stressed.paymentTermsWeeks ?? 0} weeks
-              after billing. The horizon runs past go-live so final invoices are shown landing.
+              {stressed.paymentTermsWeeks ?? 0}-week payment terms; the horizon runs past go-live.
             </p>
           </div>
         </div>
