@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { buildWorkbookPlan, describeWorkbook, downloadWorkbook, downloadsAreBlocked } from '@/lib/export';
 import { useModel } from '@/lib/store';
 
@@ -13,7 +13,11 @@ import { useModel } from '@/lib/store';
  */
 export function ExportButton() {
   const { stressed, analysis, selectedScenarioId } = useModel();
-  const [state, setState] = useState<'idle' | 'working' | 'blocked' | 'failed'>('idle');
+  const [state, setState] = useState<'idle' | 'working' | 'failed'>('idle');
+  // Checked after mount: the server has no window, and the answer must not differ
+  // between the server and client render.
+  const [embedded, setEmbedded] = useState(false);
+  useEffect(() => setEmbedded(downloadsAreBlocked()), []);
 
   const plan = useMemo(
     () => buildWorkbookPlan(stressed, analysis, selectedScenarioId),
@@ -21,7 +25,6 @@ export function ExportButton() {
   );
 
   const save = async () => {
-    if (downloadsAreBlocked()) return setState('blocked');
     setState('working');
     try {
       await downloadWorkbook(stressed, analysis, selectedScenarioId);
@@ -33,15 +36,22 @@ export function ExportButton() {
 
   return (
     <div className="row gap-16 wrap" style={{ alignItems: 'flex-start' }}>
-      <button className="primary" onClick={save} disabled={state === 'working'}>
-        {state === 'working' ? 'Building…' : 'Export to Excel'}
-      </button>
+      {/*
+        No button when the page cannot save a file. An embedded frame is not allowed to
+        hand over a spreadsheet, and a control that does nothing when pressed is worse
+        than one that is honestly absent.
+      */}
+      {!embedded && (
+        <button className="primary" onClick={save} disabled={state === 'working'}>
+          {state === 'working' ? 'Building…' : 'Export to Excel'}
+        </button>
+      )}
       <div className="stack" style={{ gap: 4, flex: 1, minWidth: 260 }}>
         <span className="tiny muted">{describeWorkbook(plan)}</span>
-        {state === 'blocked' && (
+        {embedded && (
           <span className="tiny" style={{ color: 'var(--terracotta-700)' }}>
-            This preview runs in an embedded frame, which blocks a page from saving files.
-            Run the app locally to download the workbook.
+            This preview runs in an embedded frame, which cannot hand over a spreadsheet.
+            Run the app locally and the workbook downloads from here.
           </span>
         )}
         {state === 'failed' && (
