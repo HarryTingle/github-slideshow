@@ -79,15 +79,39 @@ function mapAssignment(
   });
 }
 
+/** Forget any per-week overrides that now sit outside the assignment's range. */
+function pruneOverrides(
+  overrides: Record<number, number>,
+  startWeek: WeekIndex,
+  endWeek: WeekIndex,
+): Record<number, number> {
+  const kept: Record<number, number> = {};
+  for (const [week, value] of Object.entries(overrides)) {
+    const w = Number(week);
+    if (w >= startWeek && w <= endWeek) kept[w] = value;
+  }
+  return kept;
+}
+
 /**
  * Set one cell of the allocation grid.
  *
- * Typing into a cell outside the assignment's current range extends the range to reach
- * it — but every week the extension passes over is explicitly set to zero. Growing the
- * range alone would apply the default allocation to those weeks and quietly add effort
- * the user never asked for.
+ * The cells are the only control over when a role starts and stops, so they have to
+ * work in both directions:
  *
- * `null` clears the override and returns that week to the assignment's default.
+ * - Typing into a cell **outside** the range extends the range to reach it, and every
+ *   week the extension passes over is explicitly set to zero. Growing the range alone
+ *   would apply the default allocation to those weeks and quietly add effort nobody
+ *   asked for.
+ * - Clearing a cell at the **start or end** of the range shortens the row by that week,
+ *   which is what blanking the last cell means to anyone who has used a spreadsheet. It
+ *   also collapses past any explicit zeros left at that end — a zero week is not a
+ *   booking, it is scaffolding from an earlier extension, and it should not hold the
+ *   row open once the week beyond it is cleared.
+ * - Clearing a cell **inside** the range returns that week to the assignment's default,
+ *   because a week in the middle of a booking is still booked.
+ *
+ * A row never shrinks below a single week — removing it entirely is a separate act.
  */
 export function setAllocation(
   engagement: Engagement,
@@ -101,6 +125,22 @@ export function setAllocation(
 
     if (value == null) {
       delete overrides[target];
+      const single = assignment.startWeek === assignment.endWeek;
+      const atStart = target === assignment.startWeek;
+      const atEnd = target === assignment.endWeek;
+
+      if (!single && (atStart || atEnd)) {
+        let startWeek = atStart ? assignment.startWeek + 1 : assignment.startWeek;
+        let endWeek = atEnd ? assignment.endWeek - 1 : assignment.endWeek;
+        if (atStart) while (startWeek < endWeek && overrides[startWeek] === 0) startWeek += 1;
+        if (atEnd) while (endWeek > startWeek && overrides[endWeek] === 0) endWeek -= 1;
+        return {
+          ...assignment,
+          startWeek,
+          endWeek,
+          allocationByWeek: pruneOverrides(overrides, startWeek, endWeek),
+        };
+      }
       return { ...assignment, allocationByWeek: overrides };
     }
 

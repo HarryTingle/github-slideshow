@@ -74,6 +74,8 @@ Peak-to-average ratio flags a staffing profile the resourcing team will struggle
 - [ ] Changing an assignment's dates or allocation updates every downstream number immediately
 - [x] The allocation grid is directly editable — this is the interaction people already know
 - [x] **Every** cell takes a number, including cells outside a row's current dates; typing outside the range extends it, and the weeks stepped over are set to zero so no effort appears uninvited
+- [x] The cells are the *only* date control on a role row: clearing the box at either end shortens the row, collapsing past any zeros left behind by an earlier extension, so extending and undoing is an exact round trip
+- [x] Clearing a box inside a row returns that week to the row's default rather than shortening it — a week in the middle of a booking is still booked
 - [x] Phase and workstream names and dates are editable in the grid, and the timeline is a view of the same fields rather than a second copy
 - [x] A phase contains its workstreams and a workstream contains its assignments, enforced in the engine after every edit, so the two views can never disagree
 - [x] Moving a workstream moves the team staffed on it, per-week overrides included

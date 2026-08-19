@@ -8,7 +8,6 @@ import {
   removeAssignment,
   setAllocation,
   setAssignmentGrade,
-  setAssignmentRange,
   setAssignmentRole,
   setPersonName,
   setPhase,
@@ -229,16 +228,6 @@ export function AllocationGrid() {
                                         </option>
                                       ))}
                                     </select>
-                                    <WeekRange
-                                      from={assignment.startWeek}
-                                      to={assignment.endWeek}
-                                      label={person?.name ?? 'role'}
-                                      onChange={(startWeek, endWeek) =>
-                                        update((draft) =>
-                                          setAssignmentRange(draft, assignment.id, startWeek, endWeek),
-                                        )
-                                      }
-                                    />
                                   </div>
                                 </div>
                               </td>
@@ -279,7 +268,10 @@ export function AllocationGrid() {
         <span className="row gap-6">
           <span style={{ color: 'var(--olive-800)', fontWeight: 600 }}>0.6</span> Per-week override
         </span>
-        <span>Every box takes a number, including the empty ones — typing outside a row&apos;s dates extends it.</span>
+        <span>
+          Type in any box, including the empty ones. Typing past a row&apos;s dates extends it;
+          clearing the box at either end shortens it.
+        </span>
       </div>
 
       {trace && <CellTrace line={trace} engagement={stressed} />}

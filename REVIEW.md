@@ -58,6 +58,8 @@ Newest first. One entry per review. Use `routines/weekly-review.md`.
 - Typing into a cell beyond a row's dates extends the row, and every week stepped over is set to **zero**. Extending alone would apply the default allocation to those weeks and add effort nobody asked for. Asserted by test: typing 0.5 into one empty week adds exactly 2.5 days.
 - A named person keeps their own cost rate whatever level they are booked at — their salary does not change because the row does. Charge rate follows the level, cost does not. This is right, but it looks wrong the first time you see it, so the trace panel shows both rates.
 
+**Corrected the same day.** The per-row week-range control was redundant: the cells already say when a role starts and stops, and two ways to set the same thing is one too many. Removing it exposed a real gap — the cells could only extend a row, never shorten it — so clearing a box at either end now trims the row, collapsing past any zeros an earlier extension left behind. Extending to a week and clearing it is now an exact round trip, asserted by test. Phases and workstreams keep their range controls, having no cells of their own.
+
 **Quality note:** the grid is now the primary editing surface and has no undo. Reset is all-or-nothing. That is the next thing that will hurt.
 
 ### 2026-08-19 — Engine and app built on fictional data

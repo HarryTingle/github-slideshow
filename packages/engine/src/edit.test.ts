@@ -86,10 +86,57 @@ describe('editing a cell outside the current range', () => {
     expect(negative.assignments.find((a) => a.id === 'a5')!.allocationByWeek?.[5]).toBe(0);
   });
 
-  it('returns a week to its default when cleared', () => {
+  it('shortens the row when the last cell is cleared', () => {
+    const next = setAllocation(meridian, 'a5', 11, null);
+    const assignment = next.assignments.find((a) => a.id === 'a5')!;
+    expect(assignment.startWeek).toBe(4);
+    expect(assignment.endWeek).toBe(10);
+  });
+
+  it('shortens from the front when the first cell is cleared', () => {
+    const next = setAllocation(meridian, 'a5', 4, null);
+    expect(next.assignments.find((a) => a.id === 'a5')!.startWeek).toBe(5);
+  });
+
+  it('leaves no trailing zeros behind when an extension is undone', () => {
+    const extended = setAllocation(meridian, 'a5', 14, 0.5);
+    const undone = setAllocation(extended, 'a5', 14, null);
+    const assignment = undone.assignments.find((a) => a.id === 'a5')!;
+    // a5 ran 4–11. Extending to 14 zero-filled 12 and 13; clearing 14 should collapse
+    // straight back past them rather than leaving the row open at zero effort.
+    expect(assignment.endWeek).toBe(11);
+    expect(assignment.allocationByWeek?.[12]).toBeUndefined();
+    expect(assignment.allocationByWeek?.[13]).toBeUndefined();
+    expect(effort(undone)).toBeCloseTo(effort(), 6);
+  });
+
+  it('keeps a deliberate zero inside the row', () => {
+    const zeroed = setAllocation(meridian, 'a5', 7, 0);
+    expect(zeroed.assignments.find((a) => a.id === 'a5')!.allocationByWeek?.[7]).toBe(0);
+    expect(zeroed.assignments.find((a) => a.id === 'a5')!.endWeek).toBe(11);
+  });
+
+  it('walks a row back one week at a time', () => {
+    let next = meridian;
+    for (const week of [11, 10, 9]) next = setAllocation(next, 'a5', week, null);
+    expect(next.assignments.find((a) => a.id === 'a5')!.endWeek).toBe(8);
+  });
+
+  it('never shrinks a row out of existence', () => {
+    const single = setAssignmentRange(meridian, 'a5', 6, 6);
+    const cleared = setAllocation(single, 'a5', 6, null);
+    const assignment = cleared.assignments.find((a) => a.id === 'a5')!;
+    expect(assignment.startWeek).toBe(6);
+    expect(assignment.endWeek).toBe(6);
+  });
+
+  it('returns a week to its default when cleared in the middle of the row', () => {
     const set = setAllocation(meridian, 'a5', 5, 0.25);
     const cleared = setAllocation(set, 'a5', 5, null);
-    expect(cleared.assignments.find((a) => a.id === 'a5')!.allocationByWeek?.[5]).toBeUndefined();
+    const assignment = cleared.assignments.find((a) => a.id === 'a5')!;
+    expect(assignment.allocationByWeek?.[5]).toBeUndefined();
+    expect(assignment.startWeek).toBe(4);
+    expect(assignment.endWeek).toBe(11);
     expect(effort(cleared)).toBeCloseTo(effort(), 6);
   });
 });
