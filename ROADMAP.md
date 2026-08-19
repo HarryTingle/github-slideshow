@@ -90,6 +90,11 @@ One model, three audiences. This is where the "no repeatable output" pain is kil
 
 ---
 
+### Carried into M2/M3 as the app was used
+
+- [x] Undo and redo across the model, with a run of keystrokes in one field as a single step
+- [ ] History that survives a reload
+
 ## M4 — Collaboration
 
 Consulting and commercial teams working on the same picture — the core of the promise.

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FictionPill } from './bits';
 import { ResetButton } from './ResetButton';
+import { UndoControls } from './UndoControls';
 
 const NAV = [
   { href: '/', label: 'Overview' },
@@ -23,6 +24,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <span className="brand-sub">Delivery &amp; commercials</span>
           </Link>
           <FictionPill />
+          <UndoControls />
           <ResetButton />
           <nav className="nav">
             {NAV.map((item) => (

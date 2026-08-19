@@ -14,6 +14,7 @@ import Commercials from '../app/commercials/page';
 import Outputs from '../app/outputs/page';
 import { FictionPill } from '../components/bits';
 import { ResetButton } from '../components/ResetButton';
+import { UndoControls } from '../components/UndoControls';
 
 const ROUTES = [
   { hash: '#/', label: 'Overview', Component: Overview },
@@ -43,6 +44,7 @@ function App() {
             <span className="brand-sub">Delivery &amp; commercials</span>
           </a>
           <FictionPill />
+          <UndoControls />
           <ResetButton />
           <nav className="nav">
             {ROUTES.map((entry) => (

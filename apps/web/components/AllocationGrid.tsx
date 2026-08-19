@@ -111,13 +111,18 @@ export function AllocationGrid() {
                             aria-label={`Phase name: ${phase.name}`}
                             value={phase.name}
                             onChange={(event) =>
-                              update((draft) => setPhase(draft, phase.id, { name: event.target.value }))
+                              update((draft) => setPhase(draft, phase.id, { name: event.target.value }), {
+                                label: 'the phase name',
+                                coalesce: `phase-name:${phase.id}`,
+                              })
                             }
                           />
                         </span>
                         <button
                           className="add-role"
-                          onClick={() => update((draft) => addWorkstream(draft, phase.id))}
+                          onClick={() =>
+                            update((draft) => addWorkstream(draft, phase.id), { label: 'adding a workstream' })
+                          }
                           title="Add a workstream to this phase"
                         >
                           + workstream
@@ -126,7 +131,11 @@ export function AllocationGrid() {
                           label="×"
                           title={`Delete ${phase.name}`}
                           confirmLabel={deleteWarning(stressed, phase.id)}
-                          onConfirm={() => update((draft) => removePhase(draft, phase.id))}
+                          onConfirm={() =>
+                            update((draft) => removePhase(draft, phase.id), {
+                              label: `deleting ${phase.name}`,
+                            })
+                          }
                         />
                       </div>
                     </td>
@@ -148,15 +157,20 @@ export function AllocationGrid() {
                                   aria-label={`Workstream name: ${workstream.name}`}
                                   value={workstream.name}
                                   onChange={(event) =>
-                                    update((draft) =>
-                                      setWorkstream(draft, workstream.id, { name: event.target.value }),
+                                    update(
+                                      (draft) => setWorkstream(draft, workstream.id, { name: event.target.value }),
+                                      { label: 'the workstream name', coalesce: `ws-name:${workstream.id}` },
                                     )
                                   }
                                 />
                               </span>
                               <button
                                 className="add-role"
-                                onClick={() => update((draft) => addAssignment(draft, workstream.id))}
+                                onClick={() =>
+                                  update((draft) => addAssignment(draft, workstream.id), {
+                                    label: 'adding a role',
+                                  })
+                                }
                                 title="Add a role to this workstream"
                               >
                                 + role
@@ -169,7 +183,11 @@ export function AllocationGrid() {
                                     ? `Delete + ${assignments.length} role${assignments.length === 1 ? '' : 's'}?`
                                     : 'Delete?'
                                 }
-                                onConfirm={() => update((draft) => removeWorkstream(draft, workstream.id))}
+                                onConfirm={() =>
+                                  update((draft) => removeWorkstream(draft, workstream.id), {
+                                    label: `deleting ${workstream.name}`,
+                                  })
+                                }
                               />
                             </div>
                           </td>
@@ -190,16 +208,18 @@ export function AllocationGrid() {
                                         placeholder="Unstaffed — type a name"
                                         value={person?.name ?? ''}
                                         onChange={(event) =>
-                                          update((draft) =>
-                                            setPersonName(draft, assignment.id, event.target.value),
+                                          update(
+                                            (draft) => setPersonName(draft, assignment.id, event.target.value),
+                                            { label: 'the name', coalesce: `name:${assignment.id}` },
                                           )
                                         }
                                         // Tidied on the way out, never while typing —
                                         // trimming on each keystroke eats the space
                                         // between a first name and a surname.
                                         onBlur={(event) =>
-                                          update((draft) =>
-                                            setPersonName(draft, assignment.id, event.target.value.trim()),
+                                          update(
+                                            (draft) => setPersonName(draft, assignment.id, event.target.value.trim()),
+                                            { label: 'the name', coalesce: `name:${assignment.id}` },
                                           )
                                         }
                                       />
@@ -209,7 +229,9 @@ export function AllocationGrid() {
                                       title="Remove this role"
                                       confirmLabel="Remove?"
                                       onConfirm={() =>
-                                        update((draft) => removeAssignment(draft, assignment.id))
+                                        update((draft) => removeAssignment(draft, assignment.id), {
+                                          label: 'removing a role',
+                                        })
                                       }
                                     />
                                   </div>
@@ -219,8 +241,9 @@ export function AllocationGrid() {
                                       aria-label="Level"
                                       value={assignment.gradeId}
                                       onChange={(event) =>
-                                        update((draft) =>
-                                          setAssignmentGrade(draft, assignment.id, event.target.value),
+                                        update(
+                                          (draft) => setAssignmentGrade(draft, assignment.id, event.target.value),
+                                          { label: 'the level' },
                                         )
                                       }
                                     >
@@ -235,8 +258,9 @@ export function AllocationGrid() {
                                       aria-label="Capability"
                                       value={assignment.roleId}
                                       onChange={(event) =>
-                                        update((draft) =>
-                                          setAssignmentRole(draft, assignment.id, event.target.value),
+                                        update(
+                                          (draft) => setAssignmentRole(draft, assignment.id, event.target.value),
+                                          { label: 'the capability' },
                                         )
                                       }
                                     >
@@ -260,7 +284,10 @@ export function AllocationGrid() {
                                   sprintEdge={sprintStarts.has(week)}
                                   onTrace={setTrace}
                                   onChange={(value) =>
-                                    update((draft) => setAllocationDays(draft, assignment.id, week, value))
+                                    update(
+                                      (draft) => setAllocationDays(draft, assignment.id, week, value),
+                                      { label: 'the allocation', coalesce: `cell:${assignment.id}:${week}` },
+                                    )
                                   }
                                 />
                               ))}
@@ -278,7 +305,10 @@ export function AllocationGrid() {
       </div>
 
       <div className="row" style={{ marginTop: 14 }}>
-        <button className="add-phase" onClick={() => update((draft) => addPhase(draft))}>
+        <button
+          className="add-phase"
+          onClick={() => update((draft) => addPhase(draft), { label: 'adding a phase' })}
+        >
           + Add phase
         </button>
       </div>

@@ -144,6 +144,10 @@ a { color: var(--olive-700); }
 .nav { display: flex; gap: 2px; margin-left: 14px; }
 .topbar-inner > .pill-fiction { margin-left: auto; }
 .topbar-inner > button { margin-left: 10px; }
+.undo-controls { display: flex; gap: 2px; margin-left: 10px; }
+.undo-controls button { margin: 0; white-space: nowrap; max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+.undo-controls button:disabled { opacity: 0.35; cursor: default; }
+.undo-controls button:disabled:hover { background: transparent; }
 .nav a {
   padding: 7px 14px; border-radius: 999px; text-decoration: none;
   color: var(--ink-500); font-size: 13.5px; font-weight: 500;

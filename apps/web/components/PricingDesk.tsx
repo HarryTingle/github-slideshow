@@ -63,10 +63,12 @@ export function PricingDesk() {
 
   const applySolution = () => {
     if (!solution.reachable) return;
-    update((draft: Engagement) =>
-      solution.kind === 'price'
-        ? setContractValue(draft, definition.id, solution.price)
-        : applyRateMultiplier(draft, definition.id, solution.multiplier, billed),
+    update(
+      (draft: Engagement) =>
+        solution.kind === 'price'
+          ? setContractValue(draft, definition.id, solution.price)
+          : applyRateMultiplier(draft, definition.id, solution.multiplier, billed),
+      { label: `solving for ${target}%` },
     );
   };
 
@@ -109,8 +111,10 @@ export function PricingDesk() {
                 aria-label="Contract value"
                 value={Math.round(view.price / 100)}
                 onChange={(event) =>
-                  update((draft: Engagement) =>
-                    setContractValue(draft, definition.id, pounds(Number.parseFloat(event.target.value) || 0)),
+                  update(
+                    (draft: Engagement) =>
+                      setContractValue(draft, definition.id, pounds(Number.parseFloat(event.target.value) || 0)),
+                    { label: 'the price', coalesce: `price:${definition.id}` },
                   )
                 }
               />
@@ -233,13 +237,15 @@ export function PricingDesk() {
                           value={Math.round(grade.billedRate / 100)}
                           onChange={(event) => {
                             const raw = event.target.value.trim();
-                            update((draft: Engagement) =>
-                              setScenarioRate(
-                                draft,
-                                definition.id,
-                                grade.gradeId,
-                                raw === '' ? null : pounds(Number.parseFloat(raw) || 0),
-                              ),
+                            update(
+                              (draft: Engagement) =>
+                                setScenarioRate(
+                                  draft,
+                                  definition.id,
+                                  grade.gradeId,
+                                  raw === '' ? null : pounds(Number.parseFloat(raw) || 0),
+                                ),
+                              { label: `the ${grade.name} rate`, coalesce: `rate:${grade.gradeId}` },
                             );
                           }}
                         />
@@ -272,7 +278,11 @@ export function PricingDesk() {
           <div className="row gap-16 wrap mt-16" style={{ marginTop: 14 }}>
             <button
               className="ghost tiny"
-              onClick={() => update((draft: Engagement) => clearScenarioRates(draft, definition.id))}
+              onClick={() =>
+                update((draft: Engagement) => clearScenarioRates(draft, definition.id), {
+                  label: 'resetting the rates',
+                })
+              }
             >
               Reset rates to the inherited card
             </button>

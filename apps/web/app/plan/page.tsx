@@ -94,7 +94,12 @@ export default function PlanPage() {
                 type="date"
                 aria-label="Start date"
                 value={stressed.startDate}
-                onChange={(event) => update((draft) => setStartDate(draft, event.target.value))}
+                onChange={(event) =>
+                  update((draft) => setStartDate(draft, event.target.value), {
+                    label: 'the start date',
+                    coalesce: 'start-date',
+                  })
+                }
               />
             </div>
             <div className="field" style={{ maxWidth: 110 }}>
@@ -105,7 +110,10 @@ export default function PlanPage() {
                 aria-label="Duration in weeks"
                 value={stressed.weeks}
                 onChange={(event) =>
-                  update((draft) => setWeeks(draft, Number.parseInt(event.target.value, 10) || 1))
+                  update((draft) => setWeeks(draft, Number.parseInt(event.target.value, 10) || 1), {
+                    label: 'the duration',
+                    coalesce: 'weeks',
+                  })
                 }
               />
             </div>
@@ -118,10 +126,13 @@ export default function PlanPage() {
                 aria-label="Annual leave days per person-year"
                 value={stressed.annualLeaveDays ?? 0}
                 onChange={(event) =>
-                  update((draft) => ({
-                    ...draft,
-                    annualLeaveDays: Math.max(0, Number.parseInt(event.target.value, 10) || 0),
-                  }))
+                  update(
+                    (draft) => ({
+                      ...draft,
+                      annualLeaveDays: Math.max(0, Number.parseInt(event.target.value, 10) || 0),
+                    }),
+                    { label: 'the leave allowance', coalesce: 'leave' },
+                  )
                 }
               />
             </div>
@@ -134,7 +145,10 @@ export default function PlanPage() {
                 aria-label="Sprint length in weeks"
                 value={stressed.sprintWeeks ?? 2}
                 onChange={(event) =>
-                  update((draft) => setSprintWeeks(draft, Number.parseInt(event.target.value, 10) || 1))
+                  update((draft) => setSprintWeeks(draft, Number.parseInt(event.target.value, 10) || 1), {
+                    label: 'the sprint length',
+                    coalesce: 'sprint',
+                  })
                 }
               />
             </div>

@@ -47,6 +47,19 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-19 — Undo, finally
+**Reviewed:** undo and redo across the whole model.
+
+**Why now.** This has been logged as "the next thing that will hurt" for three sessions, and the pricing desk made it acute rather than merely likely: the target-margin solve rewrites *every* rate in the deal on one click. Before this, the only way back from a change you did not like was Reset, which throws away the afternoon along with the mistake.
+
+**The part that decides whether undo is worth having.** Typing "905" into a rate box fires three model updates. Undone naively, that is three steps, and walking back one character at a time is worse than no undo at all. Edits therefore carry a coalesce key — the field they touch — and a run of changes to the same field within 700ms extends the step already on the stack instead of adding another. Verified in the browser: typing 905 one character at a time is one undo, and it lands back on 740.
+
+**Two judgement calls:**
+- The shortcut is intercepted even inside a text field. Every input on these screens is controlled, so the browser's own undo fights the model rather than helping — and since a run of keystrokes in one field is already a single step, ours is what was meant anyway.
+- Each step is labelled by what it changed, so the control reads "Undo the Consultant rate" or "Undo solving for 30%" rather than a bare arrow. Undo you cannot predict is undo you do not trust.
+
+**Still absent:** history does not survive a reload, and sensitivity is deliberately outside it — the sliders are a lens on the model, not an edit to it.
+
 ### 2026-08-19 — A pricing desk, designed against the tool it replaces
 **Reviewed:** `packages/engine/src/pricing.ts` and the pricing desk on the Commercials page. Decision recorded as `context/decisions/0004-pricing-levers.md`.
 
@@ -146,7 +159,7 @@ Worth recording *how* it was nearly missed: the first regression test I wrote fe
 
 **Corrected the same day.** The per-row week-range control was redundant: the cells already say when a role starts and stops, and two ways to set the same thing is one too many. Removing it exposed a real gap — the cells could only extend a row, never shorten it — so clearing a box at either end now trims the row, collapsing past any zeros an earlier extension left behind. Extending to a week and clearing it is now an exact round trip, asserted by test. Phases and workstreams keep their range controls, having no cells of their own.
 
-**Quality note:** the grid is now the primary editing surface and has no undo. Reset is all-or-nothing. That is the next thing that will hurt.
+**Quality note:** the grid is now the primary editing surface and has no undo. Reset is all-or-nothing. That is the next thing that will hurt. *(Resolved 2026-08-19 — see the undo entry above.)*
 
 ### 2026-08-19 — Engine and app built on fictional data
 **Reviewed:** `packages/engine` (45 unit tests) and `apps/web` (four pages), built to specs 0001–0004.
