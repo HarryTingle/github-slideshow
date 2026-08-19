@@ -18,6 +18,16 @@ npm test          # engine unit tests
 npm run dev       # app on http://localhost:3000
 ```
 
+### A single-file build
+
+`apps/web/standalone/` bundles the same pages and the same engine into one
+self-contained HTML file — useful for sharing a working copy with someone who is not
+going to run a dev server.
+
+```bash
+npm run standalone      # writes apps/web/standalone/scope-sandbox.html
+```
+
 ## Layout
 
 | Path | What |
