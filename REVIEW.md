@@ -47,6 +47,27 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-19 — Engine and app built on fictional data
+**Reviewed:** `packages/engine` (45 unit tests) and `apps/web` (four pages), built to specs 0001–0004.
+
+**Outcome:** M1 and M2 are functionally complete and M3 is complete on screen. The app builds clean, typechecks, and all four user flows were exercised in a browser: switching scenario, editing an allocation cell and watching every downstream number move, applying sensitivity across all scenarios, and generating the three audience views.
+
+**Three changes the build forced on the specs.** Recorded here rather than made silently:
+
+1. **Rounding policy reversed.** Spec 0001 called for no intermediate rounding and a single rounding at presentation. Implemented instead as rounding once per (assignment × week) line, half-up, with totals as the sum of rounded lines. The spec's approach produces a total that differs from the visible detail by a penny or two; in a product whose promise is traceability, a total that does not equal the lines a user can point at is a worse failure than the drift. Spec updated, test asserts `sum(lines) === total`.
+2. **Payment terms added to the engagement.** Without a billing lag every structure computed as cash-neutral and maximum cash exposure was always zero — a metric that existed but said nothing. Cost is now incurred weekly and cash lands after the agreed terms.
+3. **Case margins put on one basis.** Downside/expected/upside were being computed on direct cost while the headline gross margin used fully-loaded cost, so the T&M downside margin (51.4%) read *higher* than its gross margin (47.8%). Caught by looking at the rendered page, not by a test. Every case is now stated fully loaded, and a test asserts the downside can never beat the expected case.
+
+**Two bugs found and fixed during the build**, both invisible until the app rendered:
+- `analyse` never applied a scenario's rate card, so every scenario silently billed at standard rates and the discount metric always read 0%.
+- The fixed-price-below-cost check compared a *phase* price against the *whole engagement's* cost, flagging every hybrid deal as an error.
+
+**Quality note:** the engine is correct against arithmetic we invented. The golden test — reproducing a real engagement's Excel model to the penny — is the one that matters and it cannot be written yet. Until M0 ingestion happens, "the maths is right" means "the maths is internally consistent and matches its own worked examples", which is a much weaker claim and should be described that way to anyone who asks.
+
+**Deliberately not built:** target utilisation. Where it applies is Q3 and guessing would poison every margin figure in the app.
+
+**Next:** ingest the real Excel models and rate card (M0), then write the golden test.
+
 ### 2026-08-18 — Workspace established
 **Reviewed:** initial scaffold of the AI employee workspace.
 **Outcome:** `CLAUDE.md`, `ROADMAP.md`, `REVIEW.md`, `/context`, `/customers`, `/specs`, `/demos`, `/routines` created. Domain model, commercial structures and initial specs written from first principles pending real source material.
@@ -69,6 +90,10 @@ Live list. Move to *Resolved* with the answer and the date — do not delete.
 | Q6 | Do resourcing teams work from named people or from role placeholders at bid stage? | Changes whether the resource model is people-first or role-first. | Harry | 2026-08-18 |
 | Q7 | Is Excel import needed in M1 or can it wait until M3? | Import is a large, unbounded problem that could stall the engine. | Harry | 2026-08-18 |
 | Q8 | Is "Scope" an acceptable working name, or is there an existing internal name? | Cheap to change now, expensive later. | Harry | 2026-08-18 |
+| Q9 | Is rounding per line, with totals summing the visible detail, the right call — or does finance expect unrounded totals? | Decided in the build for traceability. Reversing it later changes every stored figure. | Harry | 2026-08-19 |
+| Q10 | What are the real payment terms, and do they differ by client or structure? | Currently a flat 4 weeks. Drives the whole cash-exposure metric. | Harry | 2026-08-19 |
+| Q11 | Should contingency reduce reported margin, or sit outside it as a reserve? | Currently held against the downside case only. Firms differ, and it changes the headline number. | Harry | 2026-08-19 |
+| Q12 | Is a stated resourcing capacity constraint (currently hard-coded at 5 FTE on the demand chart) a real concept, and where does the number come from? | It is the one figure in the UI not sourced from the model. | Harry | 2026-08-19 |
 
 ### Resolved
 
@@ -85,6 +110,7 @@ Live list. Move to *Resolved* with the answer and the date — do not delete.
 | Risk | Impact | Mitigation |
 |---|---|---|
 | The domain model is invented rather than observed | Everything built on it is subtly wrong and nobody notices until a bid is lost | M0 ingestion of real Excel models is the gate to M1 |
+| A working app makes the invented data feel authoritative | Someone quotes a Meridian figure, or assumes the model is validated because it renders convincingly | Every page carries a "fictional data" marker; the README and seed file both say so plainly. Weak mitigation — real data is the only real fix. |
 | Excel remains easier for the last 10% of edge cases | Users keep a shadow spreadsheet and the tool never becomes the source of truth | Excel export/interop as a first-class feature; capture every edge case that sends someone back to Excel |
 | Internal-only assumptions leak into the product | M5 productisation requires a rewrite | Configurability is a review criterion on every change |
 | Commercial flex is fast but produces indefensible numbers | Loses trust exactly where the product must be strongest | Traceability requirement; guardrails on margin thresholds |

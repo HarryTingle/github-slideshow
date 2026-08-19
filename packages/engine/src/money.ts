@@ -1,4 +1,4 @@
-import type { Money } from './types.js';
+import type { Money } from './types';
 
 /**
  * Money handling.

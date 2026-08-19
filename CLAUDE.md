@@ -37,7 +37,7 @@ It is both the *brain* (context, customer evidence, specs, roadmap) and the *han
 
 - **Never invent a number and present it as fact.** Rates, utilisation targets, grade structures and margins come from `/context/inputs` or from an explicitly labelled assumption. Every assumption carries an `ASSUMPTION:` tag and a named owner to confirm it.
 - **The maths must be testable in isolation.** All modelling logic lives in a pure, dependency-free engine layer with unit tests. If a number can only be produced by clicking through the UI, it is not finished.
-- **No silent rounding, no floating-point money.** Money is handled in minor units (integer pence/cents) or a decimal type. Rounding is an explicit, specified step — never an accident of display.
+- **No silent rounding, no floating-point money.** Money is handled in integer minor units. Rounding happens once per line, half-up, and totals are the sum of rounded lines — so a total always equals the detail behind it. Specified in `packages/engine/src/money.ts`.
 - **Every output must be traceable.** Any figure shown to a client or the SLT must be explainable back to its inputs. "Where did this number come from?" is a question the app answers, not the user.
 - **Excel is the incumbent, not the enemy.** Users will want to export, and some will want to import. Interop is a feature, not a fallback.
 - **Client-facing tone.** Anything that could reach a client or an SLT sign-off pack is written in plain, confident, commercially literate English. No filler, no hedging, no jargon that a CFO would not use.
@@ -69,7 +69,7 @@ Each directory has a `README.md` explaining its conventions and a `_template-*.m
 
 ## 4. Technical conventions
 
-> **Status: proposed, not yet built.** See `context/decisions/0002-stack-and-architecture.md`. Confirm before the first line of application code.
+> **Status: built.** See `context/decisions/0002-stack-and-architecture.md`.
 
 - **Engine** — `packages/engine`: pure TypeScript, zero runtime dependencies, exhaustively unit tested. Owns every calculation: allocation, cost, revenue, margin, rate derivation, scenario comparison.
 - **App** — `apps/web`: Next.js (App Router) + TypeScript + React. Presentation and interaction only. The app never does arithmetic the engine could do.
@@ -77,8 +77,8 @@ Each directory has a `README.md` explaining its conventions and a `_template-*.m
 - **Testing** — Vitest. Engine coverage is a gate, not an aspiration. Golden-file tests reproduce real engagement models from `/context/inputs` end to end.
 - **Money & time** — integer minor units for money; days as the base unit of effort; ISO weeks as the base unit of the calendar.
 
-### Legacy scaffold
-This repo was created from a GitHub Learning Lab / reveal.js template. `Gemfile`, `_config.yml`, `_layouts`, `_includes`, `_posts`, `index.html` and `script/` are leftovers with no relationship to this product. They should be removed when application code lands (tracked as M1-0 in `ROADMAP.md`) — flagged rather than deleted unilaterally.
+### Seeded data
+The engagement the app loads by default — *Meridian Retail Group* — is **fictional**, and so is the rate card behind it. It exists so the app can be seen working before real models are ingested. Every figure it produces is arithmetically correct and commercially meaningless. Nothing in it may be quoted, and it must be replaced, not extended, once real material arrives.
 
 ---
 

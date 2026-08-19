@@ -27,8 +27,8 @@ A spec at `Ready` should be buildable with no further conversation.
 
 | # | Title | Milestone | Status |
 |---|---|---|---|
-| 0001 | Modelling engine core | M1 | Draft |
-| 0002 | Delivery plan and resourcing | M1 | Draft |
-| 0003 | Commercial models and scenarios | M2 | Draft |
-| 0004 | Shareable outputs | M3 | Draft |
+| 0001 | Modelling engine core | M1 | Built · golden test outstanding |
+| 0002 | Delivery plan and resourcing | M1 | Built |
+| 0003 | Commercial models and scenarios | M2 | Built |
+| 0004 | Shareable outputs | M3 | Built on screen · export outstanding |
 | 0005 | Collaboration and sign-off | M4 | Draft |

@@ -1,5 +1,5 @@
-import { activeWeeks, availableDays, rampFactor } from './calendar.js';
-import { multiplyRate, ratio } from './money.js';
+import { activeWeeks, availableDays, rampFactor } from './calendar';
+import { multiplyRate, ratio } from './money';
 import type {
   Assignment,
   Days,
@@ -9,7 +9,7 @@ import type {
   Person,
   RateCard,
   WeekIndex,
-} from './types.js';
+} from './types';
 
 /**
  * One (assignment × week) atom. This is the smallest thing a user can point at, and
@@ -121,7 +121,8 @@ export function computePlan(engagement: Engagement, rateCardId?: string): Comput
     for (const week of activeWeeks(assignment.startWeek, assignment.endWeek, engagement.weeks)) {
       const available = availableDays(engagement.calendar, week, person);
       const ramp = rampFactor(week, assignment.startWeek, assignment.rampWeeks);
-      const effortDays = assignment.allocation * available * ramp;
+      const allocation = assignment.allocationByWeek?.[week] ?? assignment.allocation;
+      const effortDays = allocation * available * ramp;
       if (effortDays === 0 && available === 0) {
         // A fully-holidayed week is zero effort, not an error. Recorded so the
         // allocation grid can show why the week is empty.
@@ -140,7 +141,7 @@ export function computePlan(engagement: Engagement, rateCardId?: string): Comput
         week,
         availableDays: available,
         rampFactor: ramp,
-        allocation: assignment.allocation,
+        allocation,
         effortDays,
         costRate,
         chargeRate,
@@ -162,7 +163,7 @@ export function computePlan(engagement: Engagement, rateCardId?: string): Comput
         assignment.workstreamId,
         (effortByWorkstream.get(assignment.workstreamId) ?? 0) + effortDays,
       );
-      fteByWeek.set(week, (fteByWeek.get(week) ?? 0) + assignment.allocation);
+      fteByWeek.set(week, (fteByWeek.get(week) ?? 0) + allocation);
     }
   }
 

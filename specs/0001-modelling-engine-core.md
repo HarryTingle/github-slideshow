@@ -1,10 +1,10 @@
 # 0001 — Modelling engine core
 
 Milestone: M1
-Status: Draft
+Status: Built (against fictional data; golden test outstanding)
 Owner: Harry
 Depends on: `context/domain-model.md`, `context/decisions/0002-stack-and-architecture.md`
-Last updated: 2026-08-18
+Last updated: 2026-08-19
 
 ## Job to be done
 
@@ -94,7 +94,9 @@ revenueCurve(w)   = cumulative revenue to end of w
 maxCashExposure   = max over w of (burnCurve(w) − revenueCurve(w))
 ```
 
-**Rounding** — no intermediate rounding. Money held in minor units throughout; a single half-up rounding at presentation. Effort held to 2dp. Rates to 2dp.
+**Rounding** *(revised 2026-08-19 during build — see `REVIEW.md`)* — money is rounded **once per line**, where a line is one (assignment × week) atom, half-up. Totals are the sum of rounded lines, so any total always equals the detail a user can point at. Effort is held at full precision internally and rounded only for display.
+
+The original rule — no intermediate rounding, one rounding at presentation — was rejected because it produces totals that differ from the visible lines. In a product whose central promise is that any figure can be explained back to its inputs, that is the worse of the two errors.
 
 ### Worked example
 
@@ -125,8 +127,8 @@ With `rampWeeks = 2`: W1 effort = 0.6 × 5 × 0.5 = 1.50 days, W2 onward at full
 
 - [ ] Engine is a standalone package with zero runtime dependencies and no I/O
 - [ ] Given the engagement document above, produces exactly the totals in the worked example
-- [ ] All money handled in integer minor units; no floating-point currency anywhere
-- [ ] No intermediate rounding — verified by a test where naive rounding would drift
+- [x] All money handled in integer minor units; no floating-point currency anywhere
+- [x] Rounding happens once per line; `sum(lines) === total` is asserted by test
 - [ ] Every derived metric in `context/domain-model.md` §8 is implemented and tested
 - [ ] Ramp-up, public holidays and personal leave each independently reduce effort, and compose correctly
 - [ ] Named-person cost rate overrides grade cost rate; absence of a named person is valid

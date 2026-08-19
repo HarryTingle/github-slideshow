@@ -1,7 +1,7 @@
-import { cashCurve, computeScenario, maxCashExposure, sliceOf, type ScenarioResult } from './commercial.js';
-import { burnCurve, computePlan, gradeMix, type ComputedPlan } from './compute.js';
-import { ratio } from './money.js';
-import type { Engagement, Guardrail, Money, Scenario, WeekIndex } from './types.js';
+import { cashCurve, computeScenario, maxCashExposure, sliceOf, type ScenarioResult } from './commercial';
+import { burnCurve, computePlan, gradeMix, type ComputedPlan } from './compute';
+import { ratio } from './money';
+import type { Engagement, Guardrail, Money, Scenario, WeekIndex } from './types';
 
 /** The numbers a Head of Commercial actually looks at. `context/domain-model.md` §8. */
 export interface Metrics {
@@ -13,6 +13,8 @@ export interface Metrics {
   blendedCostRate: Money | null;
   effectiveRate: Money | null;
   contribution: Money;
+  /** Direct delivery cost, before non-billable effort and absorbed expenses. */
+  directCost: Money;
   totalEffortDays: number;
   peakHeadcount: number;
   peakWeek: WeekIndex | null;
@@ -117,6 +119,7 @@ export function computeMetrics(
     blendedCostRate: ratio(cost, plan.totalEffortDays),
     effectiveRate: ratio(revenue, plan.totalEffortDays),
     contribution: revenue - plan.directCost,
+    directCost: plan.directCost,
     totalEffortDays: plan.totalEffortDays,
     peakHeadcount: plan.peakHeadcount,
     peakWeek: plan.peakWeek,

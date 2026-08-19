@@ -1,10 +1,10 @@
 # 0004 — Shareable outputs
 
 Milestone: M3
-Status: Draft
+Status: Built — on screen; export and snapshots outstanding
 Owner: Harry
 Depends on: `context/business-context.md`, `specs/0003-commercial-models-and-scenarios.md`, brand guidelines in `context/inputs/`
-Last updated: 2026-08-18
+Last updated: 2026-08-19
 
 ## Job to be done
 

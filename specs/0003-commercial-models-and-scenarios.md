@@ -1,10 +1,10 @@
 # 0003 — Commercial models and scenarios
 
 Milestone: M2
-Status: Draft
+Status: Built
 Owner: Harry
 Depends on: `context/commercial-models.md`, `specs/0001-modelling-engine-core.md`
-Last updated: 2026-08-18
+Last updated: 2026-08-19
 
 ## Job to be done
 

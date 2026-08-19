@@ -1,6 +1,6 @@
 # 0002 — Stack and architecture
 
-Status: **Proposed** — confirm before the first line of application code
+Status: **Accepted** — built as described on 2026-08-19
 Date: 2026-08-18
 Deciders: Harry
 

@@ -1,4 +1,4 @@
-import type { Calendar, Days, Person, WeekIndex } from './types.js';
+import type { Calendar, Days, Person, WeekIndex } from './types';
 
 /**
  * Availability before utilisation.

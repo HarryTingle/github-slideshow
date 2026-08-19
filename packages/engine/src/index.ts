@@ -1,8 +1,8 @@
-export * from './types.js';
-export * from './money.js';
-export * from './calendar.js';
-export * from './compute.js';
-export * from './commercial.js';
-export * from './metrics.js';
-export * from './validate.js';
-export { meridian } from './seed.js';
+export * from './types';
+export * from './money';
+export * from './calendar';
+export * from './compute';
+export * from './commercial';
+export * from './metrics';
+export * from './validate';
+export { meridian } from './seed';

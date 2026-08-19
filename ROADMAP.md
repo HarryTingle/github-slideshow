@@ -4,7 +4,7 @@
 **Strategy:** Internal first, then productise. We are customer zero.
 **Anchor:** Milestone 1 is a correct, tested modelling engine. Everything else is presentation on top of maths that must be right.
 
-Last reviewed: 2026-08-18
+Last reviewed: 2026-08-19
 
 ---
 
@@ -51,16 +51,19 @@ A pure, tested calculation core. No UI. The unit of proof is: *the engine reprod
 
 ---
 
-## M2 — Commercial flex
+## M2 — Commercial flex *(built)*
 
 The thing that wins bids. Same delivery plan, many commercial shapes, compared side by side in seconds.
 
-- [ ] Commercial structures: T&M, capped T&M, fixed price, milestone-based, retainer/pod, outcome & ROI share
-- [ ] Rate strategy: per-grade rates, blended rates, client-specific rate cards, discount ladders
-- [ ] Scenario engine: fork a model, change commercial assumptions, compare on margin / revenue / risk
-- [ ] Sensitivity analysis: what happens to margin if the plan slips, the mix shifts, or the discount deepens
-- [ ] Risk & contingency: explicit contingency modelling on fixed price, downside cases on outcome share
-- [ ] Guardrails: minimum margin thresholds and a clear signal when a scenario breaches them
+- [x] Commercial structures: T&M, capped T&M, fixed price, milestone-based, retainer/pod, outcome & ROI share
+- [x] Hybrid deals — a different structure per phase, summed
+- [x] Rate strategy: per-grade rates, client-specific rate cards, discount measured against standard
+- [x] Scenario engine: fork a scenario, change the structure, compare on one screen
+- [x] Sensitivity: plan slip and additional discount, applied across every scenario at once
+- [x] Risk & contingency: contingency on cost, downside/expected/upside cases, break-even overrun, cash exposure
+- [x] Guardrails: thresholds with a plain-English explanation and a named approver
+- [ ] Blended-rate break-even mix
+- [ ] Discount ladders (volume, term, strategic)
 
 **Done when:** a Head of Commercial can take a finished delivery plan and produce three defensible commercial options in under ten minutes.
 
@@ -68,16 +71,18 @@ The thing that wins bids. Same delivery plan, many commercial shapes, compared s
 
 ---
 
-## M3 — Shareable outputs
+## M3 — Shareable outputs *(on screen; export still to do)*
 
 One model, three audiences. This is where the "no repeatable output" pain is killed.
 
-- [ ] Resourcing view — roles, FTE by week, named people, gaps to fill. For the resourcing team.
-- [ ] Client view — delivery plan, team shape, phasing, commercial summary. On brand, proposal-ready.
-- [ ] SLT sign-off pack — margin, risk, contingency, comparison against guardrails, approval trail.
-- [ ] Excel export that a client can open and interrogate without the app
-- [ ] Brand application from the ingested guidelines
-- [ ] Traceability: every figure in every output links back to its inputs
+- [x] Resourcing view — roles, FTE by week, named people, gaps to fill
+- [x] Client view — approach, key dates, team shape as capability, commercial summary. Cost, margin, internal grades and other scenarios are structurally absent, not styled out of sight.
+- [x] SLT sign-off pack — recommendation, every scenario considered, risk, guardrail status
+- [x] Traceability: hover any allocation cell for the arithmetic behind it
+- [ ] Excel export
+- [ ] Brand application from the ingested guidelines — **blocked on M0**
+- [ ] Output snapshots with a recorded version, so an issued pack does not change
+- [ ] Approval trail
 
 **Done when:** a full engagement can go from blank model to client-ready proposal section and SLT pack without touching Excel.
 

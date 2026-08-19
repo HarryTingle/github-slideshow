@@ -88,8 +88,14 @@ export interface Assignment {
   personId?: string;
   startWeek: WeekIndex;
   endWeek: WeekIndex;
-  /** Fractional FTE, e.g. 0.6. */
+  /** Fractional FTE, e.g. 0.6. The default for every week of the assignment. */
   allocation: number;
+  /**
+   * Per-week overrides, by week index. This is how people actually work — they change
+   * one cell in the grid because someone is half on another engagement that fortnight.
+   * Absent weeks fall back to `allocation`.
+   */
+  allocationByWeek?: Record<WeekIndex, number>;
   /** Weeks to reach full productivity. Linear ramp. */
   rampWeeks?: number;
 }

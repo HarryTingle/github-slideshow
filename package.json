@@ -2,7 +2,10 @@
   "name": "scope",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["packages/*", "apps/*"],
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "dev": "npm run dev --workspace=@scope/web",
     "build": "npm run build --workspace=@scope/engine && npm run build --workspace=@scope/web",

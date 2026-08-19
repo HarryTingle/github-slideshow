@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { availableDays, rampFactor } from './calendar.js';
-import { computeScenario, computeStructure, maxCashExposure, sliceOf } from './commercial.js';
-import { computePlan } from './compute.js';
-import { analyse, applySensitivity, computeMetrics } from './metrics.js';
-import { pounds, ratio, toMoney } from './money.js';
-import { meridian } from './seed.js';
-import type { Engagement } from './types.js';
-import { validate } from './validate.js';
+import { availableDays, rampFactor } from './calendar';
+import { computeScenario, computeStructure, maxCashExposure, sliceOf } from './commercial';
+import { computePlan } from './compute';
+import { analyse, applySensitivity, computeMetrics } from './metrics';
+import { pounds, ratio, toMoney } from './money';
+import { meridian } from './seed';
+import type { Engagement } from './types';
+import { validate } from './validate';
 
 /**
  * The worked example from `specs/0001-modelling-engine-core.md`.
@@ -127,6 +127,20 @@ describe('rounding policy', () => {
     engagement.grades[0]!.costRate = 33333;
     const plan = computePlan(engagement);
     expect(plan.directCost).toBe(plan.lines.reduce((total, line) => total + line.cost, 0));
+  });
+});
+
+describe('per-week allocation overrides', () => {
+  it('uses the override for that week and the default everywhere else', () => {
+    const engagement = workedExample({ allocationByWeek: { 2: 0.2 } });
+    const plan = computePlan(engagement);
+    expect(plan.lines.map((line) => line.effortDays)).toEqual([3, 1, 2.4, 3]);
+  });
+
+  it('counts overrides towards a person being over capacity', () => {
+    const engagement = workedExample({ personId: 'p', allocationByWeek: { 1: 1.4 } });
+    engagement.people = [{ id: 'p', name: 'X', gradeId: 'g', roleId: 'r' }];
+    expect(validate(engagement, computePlan(engagement)).some((f) => f.id === 'person-over-p')).toBe(true);
   });
 });
 
@@ -306,6 +320,33 @@ describe('scenarios never touch the plan', () => {
     const costs = new Set(analysis.scenarios.map(({ scenario }) => scenario.cost));
     expect(costs.size).toBe(1);
     expect(analysis.scenarios.every(({ metrics }) => metrics.totalEffortDays === analysis.plan.totalEffortDays)).toBe(true);
+  });
+});
+
+describe('cases are stated on one basis', () => {
+  it('never reports a downside margin better than the expected margin', () => {
+    for (const { scenario } of analyse(meridian).scenarios) {
+      expect(scenario.downside.marginPct!).toBeLessThanOrEqual(scenario.expected.marginPct! + 1e-9);
+    }
+  });
+
+  it('states the expected case on the same basis as the headline gross margin', () => {
+    for (const { scenario, metrics } of analyse(meridian).scenarios) {
+      // They differ only by contingency, which is held against the downside, never
+      // against the reported margin.
+      if (scenario.costWithContingency === scenario.cost) {
+        expect(metrics.grossMarginPct).toBeCloseTo(scenario.expected.marginPct!, 6);
+      }
+      expect(metrics.cost).toBe(scenario.cost);
+    }
+  });
+
+  it('reports no break-even overrun under pure T&M, where the client carries it', () => {
+    const analysis = analyse(meridian);
+    const tm = analysis.scenarios.find((entry) => entry.scenario.scenarioId === 'sc-tm')!;
+    const fixed = analysis.scenarios.find((entry) => entry.scenario.scenarioId === 'sc-fixed')!;
+    expect(tm.metrics.breakEvenOverrunPct).toBeNull();
+    expect(fixed.metrics.breakEvenOverrunPct).toBeGreaterThan(0);
   });
 });
 

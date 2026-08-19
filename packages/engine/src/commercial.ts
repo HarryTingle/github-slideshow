@@ -1,5 +1,5 @@
-import type { ComputedPlan, EffortLine } from './compute.js';
-import { applyPct, ratio, toMoney } from './money.js';
+import type { ComputedPlan, EffortLine } from './compute';
+import { applyPct, ratio, toMoney } from './money';
 import type {
   CommercialStructure,
   Engagement,
@@ -7,7 +7,7 @@ import type {
   Money,
   Scenario,
   WeekIndex,
-} from './types.js';
+} from './types';
 
 /**
  * Commercial structures — `specs/0003-commercial-models-and-scenarios.md` and
@@ -316,6 +316,12 @@ export function computeScenario(
   scenario: Scenario,
 ): ScenarioResult {
   const weeks = engagement.weeks;
+  // Engagement-level adjustments. Every case below is stated on the same basis as the
+  // headline metrics — fully loaded cost against fully loaded revenue. Cases computed
+  // on direct cost alone produce a downside margin *better* than the expected margin,
+  // which is nonsense a reader will rightly refuse to believe.
+  const overhead = (engagement.nonBillableCost ?? 0) + (engagement.expenses?.absorbed ?? 0);
+  const rechargeable = engagement.expenses?.rechargeable ?? 0;
   const overrides = scenario.structureByPhase ?? {};
   const phaseIds = engagement.phases.map((phase) => phase.id);
   const isHybrid = phaseIds.some((id) => overrides[id]);
@@ -354,12 +360,12 @@ export function computeScenario(
   }
 
   const revenue = sum((result) => result.revenue);
-  const cost = plan.directCost;
-  const costWithContingency = sum((result) => result.costWithContingency);
-  const margin = revenue - cost;
+  const cost = plan.directCost + overhead;
+  const costWithContingency = sum((result) => result.costWithContingency) + overhead;
+  const margin = revenue + rechargeable - cost;
 
   const downsideRevenue = sum((result) => result.downside.revenue);
-  const downsideCost = sum((result) => result.downside.cost);
+  const downsideCost = sum((result) => result.downside.cost) + overhead;
   const upsideParts = parts.filter((part) => part.structure.upside);
   const anyUncapped = parts.some(
     (part) => part.structure.notes.some((note) => note.startsWith('Uncapped')),
@@ -374,18 +380,22 @@ export function computeScenario(
     cost,
     costWithContingency,
     margin,
-    marginPct: ratio(margin, revenue),
-    downside: caseOf('Downside', downsideRevenue, downsideCost),
-    expected: caseOf('Expected', revenue, costWithContingency),
+    marginPct: ratio(margin, revenue + rechargeable),
+    downside: caseOf('Downside', downsideRevenue + rechargeable, downsideCost),
+    expected: caseOf('Expected', revenue + rechargeable, costWithContingency),
     upside:
       upsideParts.length > 0 && !anyUncapped
         ? caseOf(
             'Upside',
-            sum((result) => result.upside?.revenue ?? result.revenue),
+            sum((result) => result.upside?.revenue ?? result.revenue) + rechargeable,
             costWithContingency,
           )
         : null,
-    breakEvenOverrunPct: ratio(downsideRevenue - cost, cost),
+    // Under pure T&M the client carries the overrun, so there is no break-even to
+    // report. Only structures that put the risk on us produce a figure here.
+    breakEvenOverrunPct: parts.every((part) => part.structure.breakEvenOverrunPct == null)
+      ? null
+      : ratio(downsideRevenue + rechargeable - cost, cost),
     isHybrid,
     notes: parts.flatMap((part) =>
       part.structure.notes.map((note) => (parts.length > 1 ? `${part.label}: ${note}` : note)),

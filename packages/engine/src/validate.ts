@@ -1,5 +1,5 @@
-import type { ComputedPlan } from './compute.js';
-import type { Engagement } from './types.js';
+import type { ComputedPlan } from './compute';
+import type { Engagement } from './types';
 
 /**
  * Validation rules — `context/domain-model.md` §9.
@@ -88,7 +88,8 @@ export function validate(engagement: Engagement, plan: ComputedPlan): Finding[] 
     if (!assignment.personId) continue;
     const weeks = byPersonWeek.get(assignment.personId) ?? new Map<number, number>();
     for (let w = assignment.startWeek; w <= Math.min(assignment.endWeek, engagement.weeks); w++) {
-      weeks.set(w, (weeks.get(w) ?? 0) + assignment.allocation);
+      const allocation = assignment.allocationByWeek?.[w] ?? assignment.allocation;
+      weeks.set(w, (weeks.get(w) ?? 0) + allocation);
     }
     byPersonWeek.set(assignment.personId, weeks);
   }

@@ -34,5 +34,5 @@ What we rejected and why.
 | # | Title | Status | Date |
 |---|---|---|---|
 | 0001 | Record decisions | Accepted | 2026-08-18 |
-| 0002 | Stack and architecture | Proposed | 2026-08-18 |
+| 0002 | Stack and architecture | Accepted | 2026-08-19 |
 | 0003 | Internal first, then productise | Accepted | 2026-08-18 |

@@ -1,5 +1,5 @@
-import { pounds } from './money.js';
-import type { Engagement } from './types.js';
+import { pounds } from './money';
+import type { Engagement } from './types';
 
 /**
  * ⚠️ FICTIONAL DATA.
