@@ -47,6 +47,23 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-19 — Real charge rates in; margin still invented
+**Reviewed:** the Solutions standard day rate card, now loaded verbatim and asserted by test.
+
+**Outcome:** charge rates are real for all eight grades. Revenue is therefore correct for any given plan — the first genuinely sourced output the app produces.
+
+**The thing to be careful about.** Cost rates were not supplied, and margin is revenue minus cost. So the app now shows a real revenue number sitting next to a margin, a downside case, a break-even overrun and a set of guardrail verdicts that are all built on an invented cost base. Half-sourced numbers are more dangerous than wholly invented ones, because the sourced half lends its authority to the rest. Three responses:
+
+1. Cost is derived from charge by one stated ratio (50% to Senior Manager, 42% above) rather than eight individually plausible figures — obviously a placeholder, auditable in a line, and it does not pretend to knowledge we lack.
+2. The provenance marker on every page now reads *"Charge rates real · cost placeholder"* rather than the vaguer "Fictional data", and the cost tile says the margins below it are provisional.
+3. A test asserts the cost/charge ratio holds. If anyone ever replaces it with hand-picked numbers, that test fails — which is the point, because at that moment every margin in the app becomes a fabrication wearing the authority of a real rate card.
+
+**Cost of the choice:** grade mix barely moves margin below Associate Director, because the ratio is flat there. That flattens one of the more interesting parts of the model and is a reason to chase the real cost rates rather than a reason to invent better-looking ones.
+
+**Worth noticing in the card itself:** the rate roughly doubles between Senior Manager (£1,350) and Director (£2,500), far faster than cost plausibly rises. That shape means swapping a Director for a Senior Manager is a much bigger concession than it looks — exactly the kind of thing the comparison view exists to make visible.
+
+**Scenario prices re-set** against the new revenue base. The demo story is now at its sharpest: the outcome-share deal has the **best** expected margin of the four and the **worst** downside, and it is the only scenario that breaches a guardrail.
+
 ### 2026-08-19 — First real domain input, and a bug that made the product unusable
 **Reviewed:** the grade ladder and capability list supplied by Harry, now in `context/domain-model.md` §3 and the seed; and a reported bug in the consultant name field.
 

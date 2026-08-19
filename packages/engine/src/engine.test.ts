@@ -100,6 +100,44 @@ describe('spec 0001 worked example', () => {
   });
 });
 
+describe('the Solutions standard rate card', () => {
+  // These are the practice's real charge rates. A change here is a change to a sourced
+  // figure and should never happen by accident.
+  const CARD: [string, number][] = [
+    ['Associate', 525],
+    ['Senior Associate', 650],
+    ['Consultant', 800],
+    ['Senior Consultant', 900],
+    ['Manager', 1100],
+    ['Senior Manager', 1350],
+    ['Associate Director', 2000],
+    ['Director', 2500],
+  ];
+
+  it('is loaded exactly as given', () => {
+    for (const [name, dayRate] of CARD) {
+      const grade = meridian.grades.find((candidate) => candidate.name === name);
+      expect(grade, `missing grade ${name}`).toBeDefined();
+      expect(grade!.chargeRate).toBe(pounds(dayRate));
+    }
+  });
+
+  it('covers the whole ladder, in order, with nothing extra', () => {
+    expect(meridian.grades.map((grade) => grade.name)).toEqual(CARD.map(([name]) => name));
+    expect(meridian.grades.map((grade) => grade.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('holds cost rates that are placeholders, not data', () => {
+    // Cost is a stated ratio of charge — 50% to Senior Manager, 42% above. If this ever
+    // stops holding, someone has invented a cost base, and every margin in the app is
+    // then a fabrication wearing the authority of the real rate card.
+    for (const grade of meridian.grades) {
+      const ratio = grade.costRate / grade.chargeRate;
+      expect(ratio).toBeCloseTo(grade.order >= 7 ? 0.42 : 0.5, 6);
+    }
+  });
+});
+
 describe('rounding policy', () => {
   it('makes every total equal the sum of the lines a user can see', () => {
     const analysis = analyse(meridian);

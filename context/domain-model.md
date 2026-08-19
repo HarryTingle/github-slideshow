@@ -88,8 +88,42 @@ canonical list in `packages/engine/src/seed.ts`.
 ladder. A Platform Engineer can be an Associate or a Director. The earlier assumption to
 that effect is now evidence.
 
-**Still unknown:** every rate. The ladder tells us the shape of the rate card, not a
-single number in it. Nothing in the seeded data may be quoted.
+### The standard rate card — charge rates
+
+**Source: Solutions standard day rate card, given by Harry 2026-08-19.** Real. Loaded
+verbatim into `packages/engine/src/seed.ts` and asserted by test.
+
+| Grade | Standard day rate |
+|---|---|
+| Associate | £525 |
+| Senior Associate | £650 |
+| Consultant | £800 |
+| Senior Consultant | £900 |
+| Manager | £1,100 |
+| Senior Manager | £1,350 |
+| Associate Director | £2,000 |
+| Director | £2,500 |
+
+Note the step at Associate Director: the rate roughly doubles between Senior Manager and
+Director, far faster than cost plausibly does. That shape is why grade mix moves margin,
+and why a "small discount" achieved by swapping a Director for a Senior Manager is a
+much larger concession than it looks.
+
+### Cost rates — still unknown
+
+**No cost data has been supplied.** The engine therefore derives a placeholder:
+
+`ASSUMPTION: fully-loaded cost is 50% of the standard day rate from Associate to Senior
+Manager, and 42% at Associate Director and Director — owner: Harry, raised: 2026-08-19.`
+
+A single stated ratio is used in place of eight individually plausible numbers on
+purpose: it is obviously a placeholder, auditable in one line, and does not pretend to
+encode knowledge of the cost base we do not have.
+
+**What this means for the app:** revenue is now correct for a given plan. **Margin is
+not.** Gross margin, downside cases, break-even overrun and the guardrail verdicts all
+depend on cost, and cost is invented. This is the single highest-value gap left in the
+model — see REVIEW Q15.
 
 At bid stage a plan is normally **role + grade** placeholders. Named people are attached later, or partially, or never. **The model must be valid with zero named people.**
 

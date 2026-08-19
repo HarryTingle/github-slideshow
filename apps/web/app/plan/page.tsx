@@ -56,7 +56,12 @@ export default function PlanPage() {
           tone={analysis.plan.unstaffedEffortDays > 0 ? 'warn' : 'good'}
           foot={`${gaps.length} role${gaps.length === 1 ? '' : 's'} still to fill`}
         />
-        <Stat label="Cost of delivery" value={formatMoney(analysis.plan.directCost)} small foot="Direct delivery cost" />
+        <Stat
+          label="Cost of delivery"
+          value={formatMoney(analysis.plan.directCost)}
+          small
+          foot="Direct cost, at placeholder rates"
+        />
       </div>
 
       <div className="card" style={{ marginBottom: 18 }}>

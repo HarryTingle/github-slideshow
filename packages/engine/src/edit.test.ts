@@ -243,7 +243,7 @@ describe('changing a level', () => {
     const next = setAssignmentGrade(meridian, 'a5', 'g-associate');
     const line = computePlan(next).lines.find((l) => l.assignmentId === 'a5')!;
     expect(line.costRate).toBe(47000);
-    expect(line.chargeRate).toBe(49500);
+    expect(line.chargeRate).toBe(52500); // Associate standard day rate, £525
   });
 });
 

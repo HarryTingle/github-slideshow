@@ -88,7 +88,11 @@ export default function OverviewPage() {
 
       <div className="grid cols-4" style={{ marginBottom: 18 }}>
         <Stat label="Revenue" value={formatMoney(metrics.revenue)} foot={scenario.parts[0]?.structure.label} />
-        <Stat label="Cost of delivery" value={formatMoney(metrics.cost)} foot="Including non-billable and absorbed expenses" />
+        <Stat
+          label="Cost of delivery"
+          value={formatMoney(metrics.cost)}
+          foot="Placeholder cost rates — every margin below is provisional"
+        />
         <Stat
           label="Gross margin"
           value={formatPct(metrics.grossMarginPct)}
