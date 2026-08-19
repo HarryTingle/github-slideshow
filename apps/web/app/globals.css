@@ -312,6 +312,13 @@ input[type="range"] { width: 100%; accent-color: var(--olive-600); }
 .tooltip .tt-row .v { font-variant-numeric: tabular-nums; color: var(--ink-900); }
 .tooltip .swatch { width: 9px; height: 9px; border-radius: 2px; flex: none; }
 
+/* ---------- Commercials ---------- */
+
+.scenario-picker {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.scenario-picker .segmented { flex: 1; }
+
 /* ---------- Pricing desk ---------- */
 
 /*

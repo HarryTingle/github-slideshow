@@ -8,7 +8,7 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ModelProvider } from '../lib/store';
-import Overview from '../app/page';
+import Overview from '../app/overview/page';
 import Plan from '../app/plan/page';
 import Commercials from '../app/commercials/page';
 import Outputs from '../app/outputs/page';
@@ -17,10 +17,10 @@ import { ResetButton } from '../components/ResetButton';
 import { UndoControls } from '../components/UndoControls';
 
 const ROUTES = [
-  { hash: '#/', label: 'Overview', Component: Overview },
   { hash: '#/plan', label: 'Delivery plan', Component: Plan },
   { hash: '#/commercials', label: 'Commercials', Component: Commercials },
   { hash: '#/outputs', label: 'Outputs', Component: Outputs },
+  { hash: '#/overview', label: 'Overview', Component: Overview },
 ];
 
 function App() {
@@ -39,7 +39,7 @@ function App() {
     <div className="shell">
       <header className="topbar">
         <div className="topbar-inner">
-          <a className="brand" href="#/">
+          <a className="brand" href="#/plan">
             <span className="brand-mark">Scope</span>
             <span className="brand-sub">Delivery &amp; commercials</span>
           </a>

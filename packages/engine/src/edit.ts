@@ -564,3 +564,47 @@ export function setContractValue(
     ),
   };
 }
+
+/**
+ * Book leave for a person in a given week.
+ *
+ * Booking leave does not usually change the total effort on an engagement — it changes
+ * *when* it is taken. The annual allowance is already provided for across the weeks
+ * somebody works, and booked leave is set against that provision rather than added to
+ * it. What moves is the shape of the plan: the week they are away loses its capacity and
+ * the rest of the weeks gain a little back.
+ */
+export function setPersonLeave(
+  engagement: Engagement,
+  personId: string,
+  week: WeekIndex,
+  days: number | null,
+): Engagement {
+  const target = clampWeek(week);
+  return {
+    ...engagement,
+    people: engagement.people.map((person) => {
+      if (person.id !== personId) return person;
+      const leave = { ...(person.leave ?? {}) };
+      if (days == null || days <= 0) delete leave[target];
+      else leave[target] = Math.min(engagement.calendar.workingDaysPerWeek, days);
+      return { ...person, leave };
+    }),
+  };
+}
+
+/** Give one person a different annual allowance from the rest. `null` restores the default. */
+export function setPersonAnnualLeave(
+  engagement: Engagement,
+  personId: string,
+  days: number | null,
+): Engagement {
+  return {
+    ...engagement,
+    people: engagement.people.map((person) =>
+      person.id === personId
+        ? { ...person, annualLeaveDays: days == null ? undefined : Math.max(0, Math.min(60, days)) }
+        : person,
+    ),
+  };
+}

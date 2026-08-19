@@ -7,10 +7,10 @@ import { ResetButton } from './ResetButton';
 import { UndoControls } from './UndoControls';
 
 const NAV = [
-  { href: '/', label: 'Overview' },
   { href: '/plan', label: 'Delivery plan' },
   { href: '/commercials', label: 'Commercials' },
   { href: '/outputs', label: 'Outputs' },
+  { href: '/overview', label: 'Overview' },
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -19,7 +19,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <div className="shell">
       <header className="topbar">
         <div className="topbar-inner">
-          <Link className="brand" href="/">
+          <Link className="brand" href="/plan">
             <span className="brand-mark">Scope</span>
             <span className="brand-sub">Delivery &amp; commercials</span>
           </Link>

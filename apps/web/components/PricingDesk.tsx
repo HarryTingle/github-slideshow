@@ -34,7 +34,7 @@ import { useModel } from '@/lib/store';
  * all, and the only lever left is the shape of the team.
  */
 export function PricingDesk() {
-  const { stressed, analysis, update, selectedScenarioId, setSelectedScenarioId } = useModel();
+  const { stressed, analysis, update, selectedScenarioId } = useModel();
   const [target, setTarget] = useState(25);
 
   const entry =
@@ -75,25 +75,6 @@ export function PricingDesk() {
   return (
     <>
       <div className="desk-bar">
-        <div className="desk-metric">
-          <span className="k">Deal</span>
-          <select
-            className="rh-select"
-            style={{ fontSize: 14, color: 'var(--ink-900)', padding: 0, maxWidth: 210 }}
-            aria-label="Scenario being priced"
-            value={entry.scenario.scenarioId}
-            onChange={(event) => setSelectedScenarioId(event.target.value)}
-          >
-            {analysis.scenarios.map((s) => (
-              <option key={s.scenario.scenarioId} value={s.scenario.scenarioId}>
-                {s.scenario.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="desk-sep" />
-
         <div className="desk-metric">
           <span className="k">Price</span>
           {view.revenueFollowsEffort ? (

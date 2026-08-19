@@ -49,6 +49,21 @@ export default function CommercialsPage() {
 
   return (
     <>
+      <div className="scenario-picker">
+        <div className="segmented">
+          {analysis.scenarios.map((option) => (
+            <button
+              key={option.scenario.scenarioId}
+              aria-pressed={option.scenario.scenarioId === selected.scenario.scenarioId}
+              onClick={() => setSelectedScenarioId(option.scenario.scenarioId)}
+            >
+              {option.scenario.name}
+            </button>
+          ))}
+        </div>
+        <button onClick={fork}>Fork scenario</button>
+      </div>
+
       <PricingDesk />
 
       <div className="card" style={{ marginBottom: 18 }}>
@@ -113,9 +128,6 @@ export default function CommercialsPage() {
             {analysis.plan.totalEffortDays.toFixed(1)} effort days ·{' '}
             {formatMoney(selected.metrics.cost)} cost, unchanged throughout
           </span>
-          <button className="tiny" style={{ marginLeft: 14 }} onClick={fork}>
-            Fork scenario
-          </button>
         </div>
         <div className="card-body flush">
           <div className="table-scroll">

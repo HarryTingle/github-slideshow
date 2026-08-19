@@ -3,6 +3,8 @@ import { headerSpans, quarterLabel, sprintNumber, weekStartLabel } from './calen
 import { computePlan } from './compute';
 import {
   addAssignment,
+  setPersonAnnualLeave,
+  setPersonLeave,
   addPhase,
   addWorkstream,
   allocationToDays,
@@ -424,5 +426,87 @@ describe('phases and workstreams', () => {
     const removed = removeWorkstream(withRole, workstream.id);
     expect(removed.workstreams.find((ws) => ws.id === workstream.id)).toBeUndefined();
     expect(removed.assignments.some((a) => a.workstreamId === workstream.id)).toBe(false);
+  });
+});
+
+
+describe('leave, per person', () => {
+  const leaveOf = (e: Engagement, id: string) => e.people.find((p) => p.id === id)!.leave ?? {};
+
+  it('books leave in a week', () => {
+    const next = setPersonLeave(meridian, 'p-moreau', 6, 3);
+    expect(leaveOf(next, 'p-moreau')[6]).toBe(3);
+  });
+
+  it('clears a booking when set to nothing', () => {
+    const booked = setPersonLeave(meridian, 'p-moreau', 6, 3);
+    expect(leaveOf(setPersonLeave(booked, 'p-moreau', 6, null), 'p-moreau')[6]).toBeUndefined();
+    expect(leaveOf(setPersonLeave(booked, 'p-moreau', 6, 0), 'p-moreau')[6]).toBeUndefined();
+  });
+
+  it('cannot book more leave in a week than the week has days', () => {
+    expect(leaveOf(setPersonLeave(meridian, 'p-moreau', 6, 9), 'p-moreau')[6]).toBe(5);
+  });
+
+  it('changes when leave is taken, not how much of it there is', () => {
+    // The allowance is already provided for across the weeks worked, so a booking is set
+    // against that provision rather than added to it. On a person whose allocation is the
+    // same every week, the total is therefore untouched.
+    const WEEKS = 12;
+    const flat: Engagement = {
+      ...meridian,
+      annualLeaveDays: 23,
+      weeks: WEEKS,
+      calendar: { workingDaysPerWeek: 5 },
+      phases: [{ id: 'ph', name: 'Build', order: 1, startWeek: 1, endWeek: WEEKS }],
+      workstreams: [{ id: 'ws', name: 'Platform', phaseId: 'ph', startWeek: 1, endWeek: WEEKS }],
+      milestones: [],
+      people: [{ id: 'p1', name: 'A. Person', gradeId: 'g-consultant', roleId: 'c-platform' }],
+      assignments: [
+        { id: 'a', workstreamId: 'ws', roleId: 'c-platform', gradeId: 'g-consultant', personId: 'p1', startWeek: 1, endWeek: WEEKS, allocation: 1 },
+      ],
+    };
+    const before = computePlan(flat).totalEffortDays;
+    const booked = setPersonLeave(flat, 'p1', 5, 3);
+    expect(computePlan(booked).totalEffortDays).toBeCloseTo(before, 6);
+
+    const week5 = (e: Engagement) =>
+      computePlan(e).lines.find((l) => l.week === 5)!.effortDays;
+    expect(week5(booked)).toBeLessThan(week5(flat));
+  });
+
+  it('costs more effort when leave lands in a week somebody is on full time', () => {
+    // J. Moreau is full time on the build and 0.6 on handover. A day off during the build
+    // costs a full day; the same day provided for across a mixed allocation costs less.
+    // Not a rounding artefact — it is the reason *when* leave falls is worth modelling.
+    const before = computePlan(meridian).totalEffortDays;
+    const inBuild = computePlan(setPersonLeave(meridian, 'p-moreau', 6, 2)).totalEffortDays;
+    const inHandover = computePlan(setPersonLeave(meridian, 'p-moreau', 13, 2)).totalEffortDays;
+    expect(inBuild).toBeLessThan(before);
+    expect(inHandover).toBeGreaterThan(inBuild);
+  });
+
+  it('does reduce the total once bookings exceed the allowance', () => {
+    let next = meridian;
+    for (const week of [4, 5, 6, 7, 8]) next = setPersonLeave(next, 'p-moreau', week, 5);
+    expect(computePlan(next).totalEffortDays).toBeLessThan(computePlan(meridian).totalEffortDays);
+  });
+
+  it('gives one person a different allowance from everyone else', () => {
+    const next = setPersonAnnualLeave(meridian, 'p-moreau', 40);
+    expect(next.people.find((p) => p.id === 'p-moreau')!.annualLeaveDays).toBe(40);
+    expect(computePlan(next).totalEffortDays).toBeLessThan(computePlan(meridian).totalEffortDays);
+  });
+
+  it('restores the practice default when the override is cleared', () => {
+    const generous = setPersonAnnualLeave(meridian, 'p-moreau', 40);
+    const restored = setPersonAnnualLeave(generous, 'p-moreau', null);
+    expect(restored.people.find((p) => p.id === 'p-moreau')!.annualLeaveDays).toBeUndefined();
+    expect(computePlan(restored).totalEffortDays).toBeCloseTo(computePlan(meridian).totalEffortDays, 6);
+  });
+
+  it('clamps a nonsense allowance rather than accepting it', () => {
+    expect(setPersonAnnualLeave(meridian, 'p-moreau', -5).people.find((p) => p.id === 'p-moreau')!.annualLeaveDays).toBe(0);
+    expect(setPersonAnnualLeave(meridian, 'p-moreau', 900).people.find((p) => p.id === 'p-moreau')!.annualLeaveDays).toBe(60);
   });
 });

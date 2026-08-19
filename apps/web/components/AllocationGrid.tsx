@@ -11,12 +11,15 @@ import {
   quarterLabel,
   removeAssignment,
   removePhase,
+  setPersonAnnualLeave,
+  setPersonLeave,
   removeWorkstream,
   setAllocationDays,
   setAssignmentGrade,
   setAssignmentRole,
   setPersonName,
   setPhase,
+  WEEKS_PER_YEAR,
   setWorkstream,
   sprintNumber,
   weekStartLabel,
@@ -40,9 +43,12 @@ import { useModel } from '@/lib/store';
  * the same fields — there is no second copy to keep in step. The containment rules live
  * in the engine (`edit.ts`), not in this component.
  */
+type Mode = 'allocation' | 'leave';
+
 export function AllocationGrid() {
   const { stressed, analysis, update } = useModel();
   const [trace, setTrace] = useState<EffortLine | null>(null);
+  const [mode, setMode] = useState<Mode>('allocation');
 
   const linesByCell = useMemo(() => {
     const map = new Map<string, EffortLine>();
@@ -65,6 +71,22 @@ export function AllocationGrid() {
 
   return (
     <>
+      <div className="row gap-16 wrap" style={{ marginBottom: 14 }}>
+        <div className="segmented">
+          <button aria-pressed={mode === 'allocation'} onClick={() => setMode('allocation')}>
+            Allocation
+          </button>
+          <button aria-pressed={mode === 'leave'} onClick={() => setMode('leave')}>
+            Leave
+          </button>
+        </div>
+        <span className="tiny muted">
+          {mode === 'allocation'
+            ? 'Days a week each role is booked for.'
+            : 'Days of leave booked, by person. Booking leave moves when it is taken, not how much of it there is — the allowance is already provided for.'}
+        </span>
+      </div>
+
       <div className="table-scroll">
         <table className="alloc">
           <thead>
@@ -235,6 +257,20 @@ export function AllocationGrid() {
                                       }
                                     />
                                   </div>
+                                  {mode === 'leave' ? (
+                                    <LeaveRowHead
+                                      person={person}
+                                      engagement={stressed}
+                                      weeks={weeks}
+                                      onAllowance={(days) =>
+                                        person &&
+                                        update((draft) => setPersonAnnualLeave(draft, person.id, days), {
+                                          label: 'the leave allowance',
+                                          coalesce: `allowance:${person.id}`,
+                                        })
+                                      }
+                                    />
+                                  ) : (
                                   <div className="rh-line">
                                     <select
                                       className="rh-select"
@@ -271,26 +307,44 @@ export function AllocationGrid() {
                                       ))}
                                     </select>
                                   </div>
+                                  )}
                                 </div>
                               </td>
 
-                              {weeks.map((week) => (
-                                <Cell
-                                  key={week}
-                                  week={week}
-                                  assignment={assignment}
-                                  line={linesByCell.get(`${assignment.id}:${week}`)}
-                                  workingDays={stressed.calendar.workingDaysPerWeek}
-                                  sprintEdge={sprintStarts.has(week)}
-                                  onTrace={setTrace}
-                                  onChange={(value) =>
-                                    update(
-                                      (draft) => setAllocationDays(draft, assignment.id, week, value),
-                                      { label: 'the allocation', coalesce: `cell:${assignment.id}:${week}` },
-                                    )
-                                  }
-                                />
-                              ))}
+                              {weeks.map((week) =>
+                                mode === 'leave' ? (
+                                  <LeaveCell
+                                    key={week}
+                                    week={week}
+                                    person={person}
+                                    line={linesByCell.get(`${assignment.id}:${week}`)}
+                                    sprintEdge={sprintStarts.has(week)}
+                                    onChange={(value) =>
+                                      person &&
+                                      update((draft) => setPersonLeave(draft, person.id, week, value), {
+                                        label: 'leave',
+                                        coalesce: `leave:${person.id}:${week}`,
+                                      })
+                                    }
+                                  />
+                                ) : (
+                                  <Cell
+                                    key={week}
+                                    week={week}
+                                    assignment={assignment}
+                                    line={linesByCell.get(`${assignment.id}:${week}`)}
+                                    workingDays={stressed.calendar.workingDaysPerWeek}
+                                    sprintEdge={sprintStarts.has(week)}
+                                    onTrace={setTrace}
+                                    onChange={(value) =>
+                                      update(
+                                        (draft) => setAllocationDays(draft, assignment.id, week, value),
+                                        { label: 'the allocation', coalesce: `cell:${assignment.id}:${week}` },
+                                      )
+                                    }
+                                  />
+                                ),
+                              )}
                             </tr>
                           );
                         })}
@@ -323,13 +377,131 @@ export function AllocationGrid() {
           <span style={{ color: 'var(--olive-800)', fontWeight: 600 }}>3</span> Per-week override
         </span>
         <span>
-          Boxes are days a week — {stressed.calendar.workingDaysPerWeek} is full time. Typing past
-          a row&apos;s dates extends it; clearing the box at either end shortens it.
+          {mode === 'allocation' ? (
+            <>
+              Boxes are days a week — {stressed.calendar.workingDaysPerWeek} is full time. Typing
+              past a row&apos;s dates extends it; clearing the box at either end shortens it.
+            </>
+          ) : (
+            <>
+              Leave belongs to the person, so it shows on every row they appear on. Unstaffed roles
+              carry the allowance but have nobody to book it for.
+            </>
+          )}
         </span>
       </div>
 
       {trace && <CellTrace line={trace} engagement={stressed} />}
     </>
+  );
+}
+
+/**
+ * Leave for one person: their allowance, and what is already against it.
+ *
+ * Shown rather than left implicit because it explains the thing that surprises people —
+ * booking leave usually does not change the total effort. The allowance is provided for
+ * across the weeks somebody works whether or not it is in the diary; putting it in the
+ * diary only decides which weeks lose the capacity.
+ */
+function LeaveRowHead({
+  person,
+  engagement,
+  weeks,
+  onAllowance,
+}: {
+  person?: { id: string; annualLeaveDays?: number; leave?: Record<number, number> };
+  engagement: Engagement;
+  weeks: number[];
+  onAllowance: (days: number | null) => void;
+}) {
+  if (!person) {
+    return (
+      <div className="rh-line">
+        <span className="tiny muted">Unstaffed — nobody to book leave for</span>
+      </div>
+    );
+  }
+  const allowance = person.annualLeaveDays ?? engagement.annualLeaveDays ?? 0;
+  const booked = weeks.reduce((total, week) => total + (person.leave?.[week] ?? 0), 0);
+  const proRata = allowance * (weeks.length / WEEKS_PER_YEAR);
+  const over = booked > proRata + 1e-9;
+
+  return (
+    <div className="rh-line">
+      <span className="tiny muted" style={{ whiteSpace: 'nowrap' }}>
+        Allowance
+      </span>
+      <input
+        className="wk-input"
+        type="number"
+        min={0}
+        max={60}
+        aria-label="Annual leave allowance for this person"
+        value={allowance}
+        onChange={(event) => {
+          const raw = event.target.value.trim();
+          onAllowance(raw === '' ? null : Number.parseFloat(raw) || 0);
+        }}
+        style={{ width: 46 }}
+      />
+      <span
+        className="tiny"
+        style={{
+          whiteSpace: 'nowrap',
+          // Booking beyond the pro-rata allowance is not an error — people do take more
+          // leave in some quarters than others — but it does cost real capacity, so it
+          // should not read the same as a booking the provision already covers.
+          color: over ? 'var(--terracotta-700)' : 'var(--ink-400)',
+        }}
+        title={
+          over
+            ? `${(booked - proRata).toFixed(1)} days beyond the ${proRata.toFixed(1)} provided for over these weeks — that much capacity comes out of the plan.`
+            : 'Within the allowance already provided for, so the total effort is unchanged.'
+        }
+      >
+        {booked.toFixed(1)} of {proRata.toFixed(1)} booked
+      </span>
+    </div>
+  );
+}
+
+/** One week of one person's leave. */
+function LeaveCell({
+  week,
+  person,
+  line,
+  sprintEdge,
+  onChange,
+}: {
+  week: number;
+  person?: { id: string; leave?: Record<number, number> };
+  line?: EffortLine;
+  sprintEdge: boolean;
+  onChange: (value: number | null) => void;
+}) {
+  const booked = person?.leave?.[week];
+  return (
+    <td className={`cell${sprintEdge ? ' sprint-edge' : ''}`}>
+      <div className={`cellbox${booked ? ' reduced' : ''}`}>
+        {person ? (
+          <input
+            className={`cellinput${booked ? ' override' : ' outside'}`}
+            aria-label={`Leave in week ${week}`}
+            placeholder="·"
+            value={booked ?? ''}
+            onChange={(event) => {
+              const raw = event.target.value.trim();
+              if (raw === '') return onChange(null);
+              const parsed = Number.parseFloat(raw);
+              if (!Number.isNaN(parsed)) onChange(parsed);
+            }}
+          />
+        ) : (
+          <span style={{ color: 'var(--ink-300)' }}>·</span>
+        )}
+      </div>
+    </td>
   );
 }
 

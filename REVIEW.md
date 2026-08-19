@@ -47,6 +47,19 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-19 — Overview becomes a report, and leave becomes personal
+**Reviewed:** the tab reorder, the scenario picker's move, and per-person leave.
+
+**Overview reads last and reads only.** It carried the scenario picker, which made it the one page that both reported the model and changed it. Now it holds no control that writes — verified by counting inputs on the page, which is zero — and the app opens on the delivery plan instead, because a summary of a model has nothing to offer someone who has just arrived. The eyebrow names the scenario being reported so it is never ambiguous which deal the numbers belong to.
+
+**The scenario picker moved to the top of Commercials**, where choosing a deal is the first thing you do, and the cramped select in the desk bar came out with it. One picker, in the place the decision is made.
+
+**Per-person leave.** The allocation grid gained a mode switch: the same rows and the same weeks, showing either days booked or leave taken. Reusing the grid rather than building a second surface means leave is edited where the plan is, at the same resolution.
+
+**What the row head had to explain.** Booking leave usually does *not* change total effort, which surprises people. The allowance is already provided for across the weeks somebody works, so putting it in the diary only decides which weeks lose the capacity. The row head therefore shows "3.0 of 6.2 booked", and turns terracotta once bookings pass the pro-rata allowance, because beyond that point it genuinely does cost capacity.
+
+**A test I had to correct.** I first asserted that booking leave never changes the total. It does — by 0.19 days in the seeded plan — because J. Moreau is full time on the build and 0.6 on handover, so a day off during the build costs more than the same day smeared across a mixed allocation. The invariant only holds where allocation is flat. Two tests now: the exact one on a flat allocation, and the real behaviour on a varying one, which is a reason *when* leave falls is worth modelling at all.
+
 ### 2026-08-19 — Undo, finally
 **Reviewed:** undo and redo across the whole model.
 
