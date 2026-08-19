@@ -4,7 +4,7 @@ Milestone: M1
 Status: Built
 Owner: Harry
 Depends on: `context/domain-model.md`, `specs/0001-modelling-engine-core.md`
-Last updated: 2026-08-19
+Last updated: 2026-08-19 (grid editing added)
 
 ## Job to be done
 
@@ -72,7 +72,14 @@ Peak-to-average ratio flags a staffing profile the resourcing team will struggle
 - [ ] FTE by week, peak headcount, and effort by grade are shown live as the plan is edited
 - [ ] Unstaffed assignments are visible as gaps, not hidden
 - [ ] Changing an assignment's dates or allocation updates every downstream number immediately
-- [ ] The allocation grid is directly editable — this is the interaction people already know
+- [x] The allocation grid is directly editable — this is the interaction people already know
+- [x] **Every** cell takes a number, including cells outside a row's current dates; typing outside the range extends it, and the weeks stepped over are set to zero so no effort appears uninvited
+- [x] Phase and workstream names and dates are editable in the grid, and the timeline is a view of the same fields rather than a second copy
+- [x] A phase contains its workstreams and a workstream contains its assignments, enforced in the engine after every edit, so the two views can never disagree
+- [x] Moving a workstream moves the team staffed on it, per-week overrides included
+- [x] A consultant's name, level and capability are editable on their row; naming an unstaffed row staffs it and closes the gap
+- [x] The engagement's start date, duration and sprint length are editable; changing the start date re-labels every week without moving the plan
+- [x] Sprint and calendar-quarter rulers sit above the week numbers
 - [ ] A plan can be duplicated as the starting point for a new engagement
 
 ## Edge cases

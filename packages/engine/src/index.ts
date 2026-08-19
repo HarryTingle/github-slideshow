@@ -5,4 +5,5 @@ export * from './compute';
 export * from './commercial';
 export * from './metrics';
 export * from './validate';
+export * from './edit';
 export { meridian } from './seed';

@@ -313,32 +313,92 @@ input[type="range"] { width: 100%; accent-color: var(--olive-600); }
 
 .alloc { font-size: 12.5px; border-collapse: separate; border-spacing: 0; }
 .alloc th, .alloc td { border-bottom: 1px solid var(--line); padding: 0; }
-.alloc thead th {
-  position: sticky; top: 0; background: var(--sand-50); z-index: 3;
-  padding: 8px 4px; text-align: center; font-size: 10.5px;
-}
+
+/* Three stacked rulers — quarter, sprint, week — each sticky at its own offset. */
+.alloc thead th { background: var(--sand-50); text-align: center; font-weight: 600; }
+.alloc thead tr.r-quarter th { position: sticky; top: 0; z-index: 3; height: 24px; font-size: 10.5px; }
+.alloc thead tr.r-sprint  th { position: sticky; top: 24px; z-index: 3; height: 22px; font-size: 10px; }
+.alloc thead tr.r-week    th { position: sticky; top: 46px; z-index: 3; height: 24px; font-size: 10.5px; }
+.alloc thead tr.r-quarter th.ruler { color: var(--ink-700); border-bottom: 1px solid var(--line); }
+.alloc thead tr.r-sprint th.ruler { color: var(--ink-400); background: var(--sand-100); border-bottom: 1px solid var(--line); }
+.alloc thead th.ruler + th.ruler { border-left: 1px solid var(--line-strong); }
+.alloc thead tr.r-week th { color: var(--ink-400); border-bottom: 1px solid var(--line-strong); font-weight: 500; }
+.alloc thead tr.r-week th .wk-date { display: block; font-size: 9px; color: var(--ink-300); }
+
 .alloc th.rowhead, .alloc td.rowhead {
   position: sticky; left: 0; background: var(--surface); z-index: 2;
-  padding: 8px 12px; text-align: left; min-width: 240px;
-  border-right: 1px solid var(--line);
+  padding: 7px 12px; text-align: left; min-width: 380px; width: 380px;
+  border-right: 1px solid var(--line-strong);
 }
-.alloc thead th.rowhead { z-index: 4; background: var(--sand-50); }
-.alloc td.cell { text-align: center; width: 44px; }
-.alloc .cellbox {
-  height: 30px; display: flex; align-items: center; justify-content: center;
-  font-variant-numeric: tabular-nums; color: var(--ink-800);
+.alloc thead th.rowhead { z-index: 5; background: var(--sand-50); vertical-align: bottom; }
+
+.alloc td.cell { text-align: center; width: 46px; }
+.alloc td.cell.sprint-edge { border-left: 1px solid var(--sand-200); }
+.alloc .cellbox { height: 32px; display: flex; align-items: center; justify-content: center; }
+
+.alloc tr.phase-row td { background: var(--sand-100); }
+.alloc tr.phase-row td.rowhead { background: var(--sand-100); }
+.alloc tr.ws-row td { background: var(--sand-50); }
+.alloc tr.ws-row td.rowhead { background: var(--sand-50); }
+.alloc tr.assignment-row:hover td.rowhead { background: var(--surface-raised); }
+
+/* Row-head editors */
+.rh { display: flex; flex-direction: column; gap: 4px; }
+.rh-line { display: flex; align-items: center; gap: 6px; }
+.rh-line > .grow { flex: 1; min-width: 0; }
+
+.alloc input.name-input,
+.alloc select.rh-select,
+.alloc input.wk-input {
+  font: inherit; border: 1px solid transparent; background: transparent;
+  border-radius: 4px; padding: 3px 5px; color: var(--ink-800); width: 100%;
 }
-.alloc .rowhead .who { color: var(--ink-900); font-weight: 500; }
-.alloc .rowhead .meta { color: var(--ink-400); font-size: 11.5px; }
-.alloc tr.phase-row td {
-  background: var(--sand-100); font-size: 11px; text-transform: uppercase;
-  letter-spacing: 0.09em; color: var(--ink-500); padding: 7px 12px; font-weight: 600;
+.alloc input.name-input:hover, .alloc select.rh-select:hover, .alloc input.wk-input:hover {
+  border-color: var(--line-strong); background: var(--surface-raised);
 }
+.alloc input.name-input:focus, .alloc select.rh-select:focus, .alloc input.wk-input:focus {
+  border-color: var(--olive-500); background: var(--surface-raised);
+}
+.alloc input.name-input { font-size: 13px; font-weight: 500; color: var(--ink-900); }
+.alloc input.name-input.unstaffed { color: var(--terracotta-700); }
+.alloc input.name-input.unstaffed::placeholder { color: var(--terracotta-600); opacity: 0.75; }
+.alloc input.name-input.phase {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--ink-500); font-weight: 600;
+}
+.alloc input.name-input.ws { font-size: 12.5px; color: var(--ink-700); }
+.alloc select.rh-select { font-size: 11.5px; color: var(--ink-500); cursor: pointer; }
+.alloc input.wk-input { width: 40px; text-align: center; font-size: 11.5px; color: var(--ink-500); }
+
+.rh-weeks { display: flex; align-items: center; gap: 2px; flex: none; }
+.rh-weeks .dash { color: var(--ink-300); font-size: 11px; }
+.rh-weeks .lbl {
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--ink-300); margin-right: 2px;
+}
+
+.row-x {
+  border: none; background: transparent; color: var(--ink-300);
+  padding: 2px 5px; font-size: 14px; line-height: 1; border-radius: 4px; flex: none;
+}
+.row-x:hover { background: var(--terracotta-100); color: var(--terracotta-700); }
+.add-role {
+  border: 1px dashed var(--line-strong); background: transparent; color: var(--ink-400);
+  font-size: 11.5px; padding: 3px 9px; border-radius: 999px;
+}
+.add-role:hover { border-color: var(--olive-500); color: var(--olive-700); background: var(--olive-050); }
+
 .alloc input.cellinput {
-  width: 40px; border: 1px solid transparent; background: transparent;
-  text-align: center; padding: 4px 0; border-radius: 4px;
+  width: 42px; border: 1px solid transparent; background: transparent;
+  text-align: center; padding: 5px 0; border-radius: 4px; font: inherit;
+  font-variant-numeric: tabular-nums; color: var(--ink-700);
 }
 .alloc input.cellinput:hover { border-color: var(--line-strong); background: var(--surface-raised); }
+.alloc input.cellinput:focus { border-color: var(--olive-500); background: var(--surface-raised); }
+.alloc input.cellinput.outside { color: var(--ink-300); }
+.alloc input.cellinput.outside::placeholder { color: var(--ink-300); }
+.alloc input.cellinput.override { color: var(--olive-800); font-weight: 600; }
+.alloc .cellbox.reduced { background: var(--terracotta-100); border-radius: 4px; }
 
 /* ---------- Timeline ---------- */
 

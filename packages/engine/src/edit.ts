@@ -1,0 +1,318 @@
+import type { Assignment, Engagement, WeekIndex } from './types';
+
+/**
+ * Structural edits to an engagement.
+ *
+ * These live in the engine rather than in the UI because they enforce an invariant the
+ * whole model depends on, and an invariant is exactly the kind of thing that should be
+ * provable by test rather than by clicking:
+ *
+ *   **a phase contains its workstreams, and a workstream contains its assignments.**
+ *
+ * Every editor below returns a new engagement and finishes by re-establishing that
+ * containment, so the timeline and the allocation grid can never disagree about when a
+ * piece of work happens. Nothing here mutates its input.
+ */
+
+function clampWeek(week: number, max = 520): WeekIndex {
+  if (!Number.isFinite(week)) return 1;
+  return Math.min(max, Math.max(1, Math.round(week)));
+}
+
+/**
+ * Re-establish containment after any edit: workstreams grow to hold their assignments,
+ * phases grow to hold their workstreams, and the engagement grows to hold its phases
+ * and milestones.
+ *
+ * Growth only. Shrinking is always an explicit act by the user, because silently
+ * dropping weeks would silently drop effort.
+ */
+export function normalise(engagement: Engagement): Engagement {
+  const assignments = engagement.assignments.map((assignment) => {
+    const startWeek = clampWeek(assignment.startWeek);
+    const endWeek = Math.max(startWeek, clampWeek(assignment.endWeek));
+    return { ...assignment, startWeek, endWeek };
+  });
+
+  const workstreams = engagement.workstreams.map((workstream) => {
+    const mine = assignments.filter((assignment) => assignment.workstreamId === workstream.id);
+    let startWeek = clampWeek(workstream.startWeek);
+    let endWeek = Math.max(startWeek, clampWeek(workstream.endWeek));
+    for (const assignment of mine) {
+      startWeek = Math.min(startWeek, assignment.startWeek);
+      endWeek = Math.max(endWeek, assignment.endWeek);
+    }
+    return { ...workstream, startWeek, endWeek };
+  });
+
+  const phases = engagement.phases.map((phase) => {
+    const mine = workstreams.filter((workstream) => workstream.phaseId === phase.id);
+    let startWeek = clampWeek(phase.startWeek);
+    let endWeek = Math.max(startWeek, clampWeek(phase.endWeek));
+    for (const workstream of mine) {
+      startWeek = Math.min(startWeek, workstream.startWeek);
+      endWeek = Math.max(endWeek, workstream.endWeek);
+    }
+    return { ...phase, startWeek, endWeek };
+  });
+
+  const weeks = Math.max(
+    1,
+    engagement.weeks,
+    ...phases.map((phase) => phase.endWeek),
+    ...engagement.milestones.map((milestone) => milestone.week),
+  );
+
+  return { ...engagement, assignments, workstreams, phases, weeks };
+}
+
+function mapAssignment(
+  engagement: Engagement,
+  assignmentId: string,
+  change: (assignment: Assignment) => Assignment,
+): Engagement {
+  return normalise({
+    ...engagement,
+    assignments: engagement.assignments.map((assignment) =>
+      assignment.id === assignmentId ? change(assignment) : assignment,
+    ),
+  });
+}
+
+/**
+ * Set one cell of the allocation grid.
+ *
+ * Typing into a cell outside the assignment's current range extends the range to reach
+ * it — but every week the extension passes over is explicitly set to zero. Growing the
+ * range alone would apply the default allocation to those weeks and quietly add effort
+ * the user never asked for.
+ *
+ * `null` clears the override and returns that week to the assignment's default.
+ */
+export function setAllocation(
+  engagement: Engagement,
+  assignmentId: string,
+  week: WeekIndex,
+  value: number | null,
+): Engagement {
+  const target = clampWeek(week);
+  return mapAssignment(engagement, assignmentId, (assignment) => {
+    const overrides: Record<number, number> = { ...(assignment.allocationByWeek ?? {}) };
+
+    if (value == null) {
+      delete overrides[target];
+      return { ...assignment, allocationByWeek: overrides };
+    }
+
+    const allocation = Math.max(0, Math.min(2, value));
+    for (let w = target + 1; w < assignment.startWeek; w++) overrides[w] ??= 0;
+    for (let w = assignment.endWeek + 1; w < target; w++) overrides[w] ??= 0;
+    overrides[target] = allocation;
+
+    return {
+      ...assignment,
+      allocationByWeek: overrides,
+      startWeek: Math.min(assignment.startWeek, target),
+      endWeek: Math.max(assignment.endWeek, target),
+    };
+  });
+}
+
+/** Move an assignment's whole range. Newly covered weeks take the default allocation. */
+export function setAssignmentRange(
+  engagement: Engagement,
+  assignmentId: string,
+  startWeek: number,
+  endWeek: number,
+): Engagement {
+  return mapAssignment(engagement, assignmentId, (assignment) => ({
+    ...assignment,
+    startWeek: clampWeek(startWeek),
+    endWeek: Math.max(clampWeek(startWeek), clampWeek(endWeek)),
+  }));
+}
+
+export function setAssignmentGrade(
+  engagement: Engagement,
+  assignmentId: string,
+  gradeId: string,
+): Engagement {
+  return mapAssignment(engagement, assignmentId, (assignment) => ({ ...assignment, gradeId }));
+}
+
+export function setAssignmentRole(
+  engagement: Engagement,
+  assignmentId: string,
+  roleId: string,
+): Engagement {
+  return mapAssignment(engagement, assignmentId, (assignment) => ({ ...assignment, roleId }));
+}
+
+/**
+ * Name the person on a row.
+ *
+ * Naming an unstaffed row staffs it — the resourcing gap closes as a side effect of
+ * typing a name, which is how it happens in life. Clearing the name reopens the gap.
+ * Renaming someone already on the engagement renames them everywhere, because it is
+ * the same person.
+ */
+export function setPersonName(
+  engagement: Engagement,
+  assignmentId: string,
+  name: string,
+): Engagement {
+  const assignment = engagement.assignments.find((candidate) => candidate.id === assignmentId);
+  if (!assignment) return engagement;
+  const trimmed = name.trim();
+
+  if (assignment.personId) {
+    if (trimmed === '') {
+      return mapAssignment(engagement, assignmentId, ({ personId, ...rest }) => rest);
+    }
+    return normalise({
+      ...engagement,
+      people: engagement.people.map((person) =>
+        person.id === assignment.personId ? { ...person, name: trimmed } : person,
+      ),
+    });
+  }
+
+  if (trimmed === '') return engagement;
+  const id = `p-${Math.random().toString(36).slice(2, 9)}`;
+  return normalise({
+    ...engagement,
+    people: [
+      ...engagement.people,
+      { id, name: trimmed, gradeId: assignment.gradeId, roleId: assignment.roleId },
+    ],
+    assignments: engagement.assignments.map((candidate) =>
+      candidate.id === assignmentId ? { ...candidate, personId: id } : candidate,
+    ),
+  });
+}
+
+export function setPhase(
+  engagement: Engagement,
+  phaseId: string,
+  change: { name?: string; startWeek?: number; endWeek?: number },
+): Engagement {
+  return normalise({
+    ...engagement,
+    phases: engagement.phases.map((phase) =>
+      phase.id === phaseId
+        ? {
+            ...phase,
+            name: change.name ?? phase.name,
+            startWeek: change.startWeek == null ? phase.startWeek : clampWeek(change.startWeek),
+            endWeek: change.endWeek == null ? phase.endWeek : clampWeek(change.endWeek),
+          }
+        : phase,
+    ),
+  });
+}
+
+/**
+ * Edit a workstream. Moving one moves everything staffed on it — the assignments keep
+ * their offset from the start of the workstream, because a workstream that slips takes
+ * its team with it.
+ */
+export function setWorkstream(
+  engagement: Engagement,
+  workstreamId: string,
+  change: { name?: string; startWeek?: number; endWeek?: number },
+): Engagement {
+  const workstream = engagement.workstreams.find((candidate) => candidate.id === workstreamId);
+  if (!workstream) return engagement;
+
+  const startWeek = change.startWeek == null ? workstream.startWeek : clampWeek(change.startWeek);
+  const endWeek = Math.max(
+    startWeek,
+    change.endWeek == null ? workstream.endWeek : clampWeek(change.endWeek),
+  );
+  const shift = startWeek - workstream.startWeek;
+
+  return normalise({
+    ...engagement,
+    workstreams: engagement.workstreams.map((candidate) =>
+      candidate.id === workstreamId
+        ? { ...candidate, name: change.name ?? candidate.name, startWeek, endWeek }
+        : candidate,
+    ),
+    assignments:
+      shift === 0
+        ? engagement.assignments
+        : engagement.assignments.map((assignment) =>
+            assignment.workstreamId === workstreamId
+              ? {
+                  ...assignment,
+                  startWeek: clampWeek(assignment.startWeek + shift),
+                  endWeek: clampWeek(assignment.endWeek + shift),
+                  allocationByWeek: shiftOverrides(assignment.allocationByWeek, shift),
+                }
+              : assignment,
+          ),
+  });
+}
+
+function shiftOverrides(
+  overrides: Record<number, number> | undefined,
+  shift: number,
+): Record<number, number> | undefined {
+  if (!overrides) return undefined;
+  const moved: Record<number, number> = {};
+  for (const [week, value] of Object.entries(overrides)) {
+    moved[clampWeek(Number(week) + shift)] = value;
+  }
+  return moved;
+}
+
+export function addAssignment(engagement: Engagement, workstreamId: string): Engagement {
+  const workstream = engagement.workstreams.find((candidate) => candidate.id === workstreamId);
+  if (!workstream) return engagement;
+  const grade = [...engagement.grades].sort((a, b) => a.order - b.order)[1] ?? engagement.grades[0];
+  if (!grade || !engagement.roles[0]) return engagement;
+
+  return normalise({
+    ...engagement,
+    assignments: [
+      ...engagement.assignments,
+      {
+        id: `a-${Math.random().toString(36).slice(2, 9)}`,
+        workstreamId,
+        roleId: engagement.roles[0].id,
+        gradeId: grade.id,
+        startWeek: workstream.startWeek,
+        endWeek: workstream.endWeek,
+        allocation: 1,
+      },
+    ],
+  });
+}
+
+export function removeAssignment(engagement: Engagement, assignmentId: string): Engagement {
+  return normalise({
+    ...engagement,
+    assignments: engagement.assignments.filter((assignment) => assignment.id !== assignmentId),
+  });
+}
+
+/**
+ * Move the whole engagement in time.
+ *
+ * Week indices are the model's base unit, so the plan does not move — only what the
+ * weeks are called. Every allocation, milestone and phase boundary follows the new
+ * start date automatically.
+ */
+export function setStartDate(engagement: Engagement, startDate: string): Engagement {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return engagement;
+  return { ...engagement, startDate };
+}
+
+/** Shrink or grow the engagement. Shrinking is refused below the work already planned. */
+export function setWeeks(engagement: Engagement, weeks: number): Engagement {
+  return normalise({ ...engagement, weeks: clampWeek(weeks) });
+}
+
+export function setSprintWeeks(engagement: Engagement, sprintWeeks: number): Engagement {
+  return { ...engagement, sprintWeeks: Math.max(1, Math.min(12, Math.round(sprintWeeks) || 1)) };
+}

@@ -1,6 +1,14 @@
 'use client';
 
-import { formatDays, formatMoney, weekStartLabel } from '@scope/engine';
+import {
+  formatDays,
+  formatMoney,
+  setSprintWeeks,
+  setStartDate,
+  setWeeks,
+  sprintNumber,
+  weekStartLabel,
+} from '@scope/engine';
 import { AllocationGrid } from '@/components/AllocationGrid';
 import { DemandBars } from '@/components/charts';
 import { FictionPill, Findings, Stat } from '@/components/bits';
@@ -8,7 +16,7 @@ import { Timeline } from '@/components/Timeline';
 import { useModel } from '@/lib/store';
 
 export default function PlanPage() {
-  const { stressed, analysis, findings, reset, isDirty } = useModel();
+  const { stressed, analysis, findings, update } = useModel();
 
   const fte = Array.from({ length: stressed.weeks }, (_, i) => analysis.plan.fteByWeek.get(i + 1) ?? 0);
   const gaps = stressed.assignments.filter((assignment) => !assignment.personId);
@@ -25,11 +33,6 @@ export default function PlanPage() {
           </p>
         </div>
         <div className="head-actions">
-          {isDirty && (
-            <button onClick={reset} className="ghost">
-              Reset to original
-            </button>
-          )}
           <FictionPill />
         </div>
       </div>
@@ -60,10 +63,50 @@ export default function PlanPage() {
         <div className="card-head">
           <h3>Timeline</h3>
           <span className="card-note">
-            {stressed.weeks} weeks from {weekStartLabel(stressed.startDate, 1)}
+            {stressed.weeks} weeks from {weekStartLabel(stressed.startDate, 1)} ·{' '}
+            {sprintNumber(stressed.weeks, stressed.sprintWeeks ?? 2)} sprints
           </span>
         </div>
         <div className="card-body">
+          <div className="row gap-24 wrap" style={{ marginBottom: 22 }}>
+            <div className="field" style={{ maxWidth: 170 }}>
+              <label>Start date</label>
+              <input
+                type="date"
+                aria-label="Start date"
+                value={stressed.startDate}
+                onChange={(event) => update((draft) => setStartDate(draft, event.target.value))}
+              />
+              <span className="hint">Every week label follows it. The plan itself does not move.</span>
+            </div>
+            <div className="field" style={{ maxWidth: 110 }}>
+              <label>Duration</label>
+              <input
+                type="number"
+                min={1}
+                aria-label="Duration in weeks"
+                value={stressed.weeks}
+                onChange={(event) =>
+                  update((draft) => setWeeks(draft, Number.parseInt(event.target.value, 10) || 1))
+                }
+              />
+              <span className="hint">Weeks. Will not shrink below the work planned.</span>
+            </div>
+            <div className="field" style={{ maxWidth: 110 }}>
+              <label>Sprint length</label>
+              <input
+                type="number"
+                min={1}
+                max={12}
+                aria-label="Sprint length in weeks"
+                value={stressed.sprintWeeks ?? 2}
+                onChange={(event) =>
+                  update((draft) => setSprintWeeks(draft, Number.parseInt(event.target.value, 10) || 1))
+                }
+              />
+              <span className="hint">Weeks per sprint.</span>
+            </div>
+          </div>
           <Timeline engagement={stressed} />
         </div>
       </div>
@@ -102,7 +145,9 @@ export default function PlanPage() {
       <div className="card">
         <div className="card-head">
           <h3>Allocation</h3>
-          <span className="card-note">Hover a cell to see where its number comes from</span>
+          <span className="card-note">
+            Every box is editable · phase and workstream dates feed the timeline above
+          </span>
         </div>
         <div className="card-body">
           <AllocationGrid />

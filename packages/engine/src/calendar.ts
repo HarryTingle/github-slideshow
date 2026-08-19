@@ -68,3 +68,40 @@ export function weekStartLabel(startDate: string, week: WeekIndex): string {
     timeZone: 'UTC',
   }).format(date);
 }
+
+/** The Monday of a given week. Display only — the engine never calculates on dates. */
+export function weekDate(startDate: string, week: WeekIndex): Date {
+  const date = new Date(`${startDate}T00:00:00Z`);
+  date.setTime(date.getTime() + (week - 1) * MS_PER_WEEK);
+  return date;
+}
+
+/** Sprint number, counting from week 1 of the engagement. */
+export function sprintNumber(week: WeekIndex, sprintWeeks = 2): number {
+  const length = Math.max(1, Math.round(sprintWeeks));
+  return Math.floor((week - 1) / length) + 1;
+}
+
+/** Calendar quarter the week falls in — "Q3 2026". */
+export function quarterLabel(startDate: string, week: WeekIndex): string {
+  const date = weekDate(startDate, week);
+  return `Q${Math.floor(date.getUTCMonth() / 3) + 1} ${date.getUTCFullYear()}`;
+}
+
+/**
+ * Collapse a run of weeks into header spans — one entry per contiguous run sharing a
+ * label. Used for the quarter and sprint rulers above the allocation grid.
+ */
+export function headerSpans(
+  weeks: number,
+  labelOf: (week: WeekIndex) => string,
+): { label: string; from: WeekIndex; span: number }[] {
+  const spans: { label: string; from: WeekIndex; span: number }[] = [];
+  for (let week = 1; week <= weeks; week++) {
+    const label = labelOf(week);
+    const last = spans[spans.length - 1];
+    if (last && last.label === label) last.span += 1;
+    else spans.push({ label, from: week, span: 1 });
+  }
+  return spans;
+}

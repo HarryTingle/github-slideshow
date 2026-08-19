@@ -1,6 +1,24 @@
 'use client';
 
-import { formatMoney, type Assignment, type EffortLine, type Engagement } from '@scope/engine';
+import {
+  addAssignment,
+  formatMoney,
+  headerSpans,
+  quarterLabel,
+  removeAssignment,
+  setAllocation,
+  setAssignmentGrade,
+  setAssignmentRange,
+  setAssignmentRole,
+  setPersonName,
+  setPhase,
+  setWorkstream,
+  sprintNumber,
+  weekStartLabel,
+  type Assignment,
+  type EffortLine,
+  type Engagement,
+} from '@scope/engine';
 import { useMemo, useState } from 'react';
 import { useModel } from '@/lib/store';
 
@@ -8,8 +26,13 @@ import { useModel } from '@/lib/store';
  * The allocation grid — roles down, weeks across, FTE in the cells.
  *
  * Deliberately the view that most resembles the spreadsheet people already use, and
- * directly editable for the same reason. Changing a cell writes a per-week override
- * on that assignment; every number elsewhere in the app moves with it.
+ * editable in the same way: every box takes a number, including the empty ones. Typing
+ * outside a row's current range extends it (the weeks stepped over are set to zero, so
+ * nothing is staffed that nobody asked for).
+ *
+ * Phase and workstream dates are edited here too, and the timeline above is a view of
+ * the same fields — there is no second copy to keep in step. The containment rules live
+ * in the engine (`edit.ts`), not in this component.
  */
 export function AllocationGrid() {
   const { stressed, analysis, update } = useModel();
@@ -22,114 +45,225 @@ export function AllocationGrid() {
   }, [analysis]);
 
   const weeks = Array.from({ length: stressed.weeks }, (_, i) => i + 1);
-  const grades = new Map(stressed.grades.map((grade) => [grade.id, grade]));
-  const roles = new Map(stressed.roles.map((role) => [role.id, role]));
+  const sprintWeeks = stressed.sprintWeeks ?? 2;
+  const quarters = headerSpans(stressed.weeks, (week) => quarterLabel(stressed.startDate, week));
+  const sprints = headerSpans(stressed.weeks, (week) => `Sprint ${sprintNumber(week, sprintWeeks)}`);
+  const sprintStarts = new Set(sprints.map((span) => span.from));
+
+  const grades = [...stressed.grades].sort((a, b) => a.order - b.order);
+  const roles = stressed.roles;
   const people = new Map(stressed.people.map((person) => [person.id, person]));
   const phases = [...stressed.phases].sort((a, b) => a.order - b.order);
 
-  const setAllocation = (assignment: Assignment, week: number, raw: string) => {
-    const parsed = Number.parseFloat(raw);
-    update((draft: Engagement) => ({
-      ...draft,
-      assignments: draft.assignments.map((candidate) => {
-        if (candidate.id !== assignment.id) return candidate;
-        const overrides = { ...(candidate.allocationByWeek ?? {}) };
-        if (raw.trim() === '' || Number.isNaN(parsed)) delete overrides[week];
-        else overrides[week] = Math.max(0, Math.min(2, parsed));
-        return { ...candidate, allocationByWeek: overrides };
-      }),
-    }));
-  };
+  const columns = weeks.length + 1;
 
   return (
     <>
       <div className="table-scroll">
         <table className="alloc">
           <thead>
-            <tr>
-              <th className="rowhead">Role / person</th>
+            <tr className="r-quarter">
+              <th className="rowhead" rowSpan={3}>
+                <span className="tiny muted" style={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Phase · workstream · role
+                </span>
+              </th>
+              {quarters.map((span) => (
+                <th className="ruler" key={span.from} colSpan={span.span}>
+                  {span.label}
+                </th>
+              ))}
+            </tr>
+            <tr className="r-sprint">
+              {sprints.map((span) => (
+                <th className="ruler" key={span.from} colSpan={span.span}>
+                  {span.span > 1 ? span.label : span.label.replace('Sprint ', 'S')}
+                </th>
+              ))}
+            </tr>
+            <tr className="r-week">
               {weeks.map((week) => (
                 <th key={week} scope="col">
                   {week}
+                  <span className="wk-date">{weekStartLabel(stressed.startDate, week)}</span>
                 </th>
               ))}
             </tr>
           </thead>
+
           <tbody>
             {phases.map((phase) => {
               const workstreams = stressed.workstreams.filter((ws) => ws.phaseId === phase.id);
-              const assignments = workstreams.flatMap((ws) =>
-                stressed.assignments.filter((a) => a.workstreamId === ws.id).map((a) => ({ a, ws })),
-              );
-              if (assignments.length === 0) return null;
               return (
-                <>
-                  <tr className="phase-row" key={phase.id}>
-                    <td colSpan={weeks.length + 1}>{phase.name}</td>
+                <FragmentRows key={phase.id}>
+                  <tr className="phase-row">
+                    <td className="rowhead">
+                      <div className="rh-line">
+                        <span className="grow">
+                          <input
+                            className="name-input phase"
+                            aria-label={`Phase name: ${phase.name}`}
+                            value={phase.name}
+                            onChange={(event) =>
+                              update((draft) => setPhase(draft, phase.id, { name: event.target.value }))
+                            }
+                          />
+                        </span>
+                        <WeekRange
+                          from={phase.startWeek}
+                          to={phase.endWeek}
+                          label={`Phase ${phase.name}`}
+                          onChange={(startWeek, endWeek) =>
+                            update((draft) => setPhase(draft, phase.id, { startWeek, endWeek }))
+                          }
+                        />
+                      </div>
+                    </td>
+                    <td colSpan={columns - 1} />
                   </tr>
-                  {assignments.map(({ a, ws }) => {
-                    const grade = grades.get(a.gradeId);
-                    const person = a.personId ? people.get(a.personId) : undefined;
+
+                  {workstreams.map((workstream) => {
+                    const assignments = stressed.assignments.filter(
+                      (assignment) => assignment.workstreamId === workstream.id,
+                    );
                     return (
-                      <tr key={a.id}>
-                        <td className="rowhead">
-                          <div className="who">
-                            {person?.name ?? (
-                              <span style={{ color: 'var(--terracotta-700)' }}>
-                                {roles.get(a.roleId)?.name} — unstaffed
-                              </span>
-                            )}
-                          </div>
-                          <div className="meta">
-                            {grade?.name} · {ws.name}
-                            {a.rampWeeks ? ` · ${a.rampWeeks}-week ramp` : ''}
-                          </div>
-                        </td>
-                        {weeks.map((week) => {
-                          const line = linesByCell.get(`${a.id}:${week}`);
-                          const inRange = week >= a.startWeek && week <= a.endWeek;
-                          const reduced = line != null && line.availableDays < stressed.calendar.workingDaysPerWeek;
-                          const overridden = a.allocationByWeek?.[week] != null;
-                          return (
-                            <td className="cell" key={week}>
-                              {inRange ? (
-                                <div
-                                  className="cellbox"
-                                  onMouseEnter={() => line && setTrace(line)}
-                                  onMouseLeave={() => setTrace(null)}
-                                  style={{
-                                    background: reduced ? 'var(--terracotta-100)' : undefined,
-                                    borderRadius: 4,
-                                  }}
-                                  title={
-                                    reduced
-                                      ? `${line?.availableDays} days available this week — holiday or leave`
-                                      : undefined
+                      <FragmentRows key={workstream.id}>
+                        <tr className="ws-row">
+                          <td className="rowhead">
+                            <div className="rh-line" style={{ paddingLeft: 10 }}>
+                              <span className="grow">
+                                <input
+                                  className="name-input ws"
+                                  aria-label={`Workstream name: ${workstream.name}`}
+                                  value={workstream.name}
+                                  onChange={(event) =>
+                                    update((draft) =>
+                                      setWorkstream(draft, workstream.id, { name: event.target.value }),
+                                    )
                                   }
-                                >
-                                  <input
-                                    className="cellinput"
-                                    aria-label={`Allocation for ${person?.name ?? roles.get(a.roleId)?.name} in week ${week}`}
-                                    value={a.allocationByWeek?.[week] ?? a.allocation}
-                                    onChange={(event) => setAllocation(a, week, event.target.value)}
-                                    style={{
-                                      color: overridden ? 'var(--olive-800)' : 'var(--ink-700)',
-                                      fontWeight: overridden ? 600 : 400,
-                                    }}
-                                  />
+                                />
+                              </span>
+                              <button
+                                className="add-role"
+                                onClick={() => update((draft) => addAssignment(draft, workstream.id))}
+                                title="Add a role to this workstream"
+                              >
+                                + role
+                              </button>
+                              <WeekRange
+                                from={workstream.startWeek}
+                                to={workstream.endWeek}
+                                label={`Workstream ${workstream.name}`}
+                                onChange={(startWeek, endWeek) =>
+                                  update((draft) =>
+                                    setWorkstream(draft, workstream.id, { startWeek, endWeek }),
+                                  )
+                                }
+                              />
+                            </div>
+                          </td>
+                          <td colSpan={columns - 1} />
+                        </tr>
+
+                        {assignments.map((assignment) => {
+                          const person = assignment.personId ? people.get(assignment.personId) : undefined;
+                          return (
+                            <tr className="assignment-row" key={assignment.id}>
+                              <td className="rowhead">
+                                <div className="rh" style={{ paddingLeft: 20 }}>
+                                  <div className="rh-line">
+                                    <span className="grow">
+                                      <input
+                                        className={`name-input${person ? '' : ' unstaffed'}`}
+                                        aria-label="Consultant name"
+                                        placeholder="Unstaffed — type a name"
+                                        value={person?.name ?? ''}
+                                        onChange={(event) =>
+                                          update((draft) =>
+                                            setPersonName(draft, assignment.id, event.target.value),
+                                          )
+                                        }
+                                      />
+                                    </span>
+                                    <button
+                                      className="row-x"
+                                      aria-label="Remove this role"
+                                      title="Remove this role"
+                                      onClick={() =>
+                                        update((draft) => removeAssignment(draft, assignment.id))
+                                      }
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                  <div className="rh-line">
+                                    <select
+                                      className="rh-select"
+                                      aria-label="Level"
+                                      value={assignment.gradeId}
+                                      onChange={(event) =>
+                                        update((draft) =>
+                                          setAssignmentGrade(draft, assignment.id, event.target.value),
+                                        )
+                                      }
+                                    >
+                                      {grades.map((grade) => (
+                                        <option key={grade.id} value={grade.id}>
+                                          {grade.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <select
+                                      className="rh-select"
+                                      aria-label="Capability"
+                                      value={assignment.roleId}
+                                      onChange={(event) =>
+                                        update((draft) =>
+                                          setAssignmentRole(draft, assignment.id, event.target.value),
+                                        )
+                                      }
+                                    >
+                                      {roles.map((role) => (
+                                        <option key={role.id} value={role.id}>
+                                          {role.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <WeekRange
+                                      from={assignment.startWeek}
+                                      to={assignment.endWeek}
+                                      label={person?.name ?? 'role'}
+                                      onChange={(startWeek, endWeek) =>
+                                        update((draft) =>
+                                          setAssignmentRange(draft, assignment.id, startWeek, endWeek),
+                                        )
+                                      }
+                                    />
+                                  </div>
                                 </div>
-                              ) : (
-                                <div className="cellbox" style={{ color: 'var(--ink-300)' }}>
-                                  ·
-                                </div>
-                              )}
-                            </td>
+                              </td>
+
+                              {weeks.map((week) => (
+                                <Cell
+                                  key={week}
+                                  week={week}
+                                  assignment={assignment}
+                                  line={linesByCell.get(`${assignment.id}:${week}`)}
+                                  workingDays={stressed.calendar.workingDaysPerWeek}
+                                  sprintEdge={sprintStarts.has(week)}
+                                  onTrace={setTrace}
+                                  onChange={(value) =>
+                                    update((draft) => setAllocation(draft, assignment.id, week, value))
+                                  }
+                                />
+                              ))}
+                            </tr>
                           );
                         })}
-                      </tr>
+                      </FragmentRows>
                     );
                   })}
-                </>
+                </FragmentRows>
               );
             })}
           </tbody>
@@ -145,11 +279,99 @@ export function AllocationGrid() {
         <span className="row gap-6">
           <span style={{ color: 'var(--olive-800)', fontWeight: 600 }}>0.6</span> Per-week override
         </span>
-        <span>Type in any cell to change that week only. Everything downstream updates.</span>
+        <span>Every box takes a number, including the empty ones — typing outside a row&apos;s dates extends it.</span>
       </div>
 
       {trace && <CellTrace line={trace} engagement={stressed} />}
     </>
+  );
+}
+
+/** Rows have to be siblings of <tr>, so grouping needs a fragment rather than a wrapper. */
+function FragmentRows({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
+function WeekRange({
+  from,
+  to,
+  label,
+  onChange,
+}: {
+  from: number;
+  to: number;
+  label: string;
+  onChange: (from: number, to: number) => void;
+}) {
+  return (
+    <span className="rh-weeks">
+      <span className="lbl">wk</span>
+      <input
+        className="wk-input"
+        type="number"
+        min={1}
+        aria-label={`${label} start week`}
+        value={from}
+        onChange={(event) => onChange(Number.parseInt(event.target.value, 10) || 1, to)}
+      />
+      <span className="dash">–</span>
+      <input
+        className="wk-input"
+        type="number"
+        min={1}
+        aria-label={`${label} end week`}
+        value={to}
+        onChange={(event) => onChange(from, Number.parseInt(event.target.value, 10) || from)}
+      />
+    </span>
+  );
+}
+
+function Cell({
+  week,
+  assignment,
+  line,
+  workingDays,
+  sprintEdge,
+  onTrace,
+  onChange,
+}: {
+  week: number;
+  assignment: Assignment;
+  line?: EffortLine;
+  workingDays: number;
+  sprintEdge: boolean;
+  onTrace: (line: EffortLine | null) => void;
+  onChange: (value: number | null) => void;
+}) {
+  const inRange = week >= assignment.startWeek && week <= assignment.endWeek;
+  const override = assignment.allocationByWeek?.[week];
+  const reduced = line != null && line.availableDays < workingDays;
+  const value = inRange ? (override ?? assignment.allocation) : (override ?? '');
+
+  return (
+    <td className={`cell${sprintEdge ? ' sprint-edge' : ''}`}>
+      <div
+        className={`cellbox${reduced ? ' reduced' : ''}`}
+        onMouseEnter={() => line && onTrace(line)}
+        onMouseLeave={() => onTrace(null)}
+        title={reduced ? `${line?.availableDays} days available this week — holiday or leave` : undefined}
+      >
+        <input
+          className={`cellinput${inRange ? '' : ' outside'}${override != null ? ' override' : ''}`}
+          aria-label={`Allocation in week ${week}`}
+          placeholder="·"
+          value={value}
+          onChange={(event) => {
+            const raw = event.target.value.trim();
+            if (raw === '') return onChange(null);
+            const parsed = Number.parseFloat(raw);
+            if (Number.isNaN(parsed)) return;
+            onChange(parsed);
+          }}
+        />
+      </div>
+    </td>
   );
 }
 

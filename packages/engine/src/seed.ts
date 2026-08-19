@@ -40,6 +40,7 @@ export const meridian: Engagement = {
   client: 'Meridian Retail Group',
   startDate: '2026-09-07',
   weeks: 14,
+  sprintWeeks: 2,
   calendar: {
     workingDaysPerWeek: 5,
     // August bank holiday equivalent in week 8, and a company day in week 13.

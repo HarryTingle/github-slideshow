@@ -47,6 +47,19 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-19 — The allocation grid became an editor
+**Reviewed:** `packages/engine/src/edit.ts` (31 new tests) and the rewritten allocation grid.
+
+**Outcome:** phase, workstream and assignment dates, consultant names, levels and capabilities, the engagement start date, duration and sprint length are all editable in the grid, and every cell takes a number rather than only the filled ones. Sprint and calendar-quarter rulers sit above the week numbers.
+
+**The decision worth recording.** The structural edits went in the *engine*, not the component, because they enforce an invariant rather than manipulate a view: a phase contains its workstreams, and a workstream contains its assignments. Growth is automatic and shrinking is always explicit, since silently dropping weeks would silently drop effort. That invariant is what lets the timeline and the grid be two views of one set of fields instead of two copies to keep in step — and it is provable by test, which a click-through never is.
+
+**Two behaviours chosen deliberately, both worth challenging:**
+- Typing into a cell beyond a row's dates extends the row, and every week stepped over is set to **zero**. Extending alone would apply the default allocation to those weeks and add effort nobody asked for. Asserted by test: typing 0.5 into one empty week adds exactly 2.5 days.
+- A named person keeps their own cost rate whatever level they are booked at — their salary does not change because the row does. Charge rate follows the level, cost does not. This is right, but it looks wrong the first time you see it, so the trace panel shows both rates.
+
+**Quality note:** the grid is now the primary editing surface and has no undo. Reset is all-or-nothing. That is the next thing that will hurt.
+
 ### 2026-08-19 — Engine and app built on fictional data
 **Reviewed:** `packages/engine` (45 unit tests) and `apps/web` (four pages), built to specs 0001–0004.
 
@@ -94,6 +107,8 @@ Live list. Move to *Resolved* with the answer and the date — do not delete.
 | Q10 | What are the real payment terms, and do they differ by client or structure? | Currently a flat 4 weeks. Drives the whole cash-exposure metric. | Harry | 2026-08-19 |
 | Q11 | Should contingency reduce reported margin, or sit outside it as a reserve? | Currently held against the downside case only. Firms differ, and it changes the headline number. | Harry | 2026-08-19 |
 | Q12 | Is a stated resourcing capacity constraint (currently hard-coded at 5 FTE on the demand chart) a real concept, and where does the number come from? | It is the one figure in the UI not sourced from the model. | Harry | 2026-08-19 |
+| Q13 | Should moving a workstream move the team staffed on it, or hold them still? | Currently it moves them, on the reasoning that a workstream that slips takes its team with it. The opposite is defensible when people are committed to dates rather than to work. | Harry | 2026-08-19 |
+| Q14 | Does a person's level ever change mid-engagement (promotion, or booked at a different grade per workstream)? | Level is currently held per assignment, so the same person can sit at two levels. That may be a feature or a trap. | Harry | 2026-08-19 |
 
 ### Resolved
 

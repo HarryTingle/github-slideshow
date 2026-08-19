@@ -163,6 +163,8 @@ export interface Engagement {
   /** ISO date of the Monday of week 1. Display only. */
   startDate: string;
   weeks: number;
+  /** Weeks per sprint, for the sprint ruler above the allocation grid. */
+  sprintWeeks?: number;
   calendar: Calendar;
   grades: Grade[];
   roles: Role[];
