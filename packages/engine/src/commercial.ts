@@ -73,8 +73,17 @@ export interface StructureResult {
   upside: CaseResult | null;
   /** How much the plan can overrun before the deal loses money. null under T&M. */
   breakEvenOverrunPct: number | null;
-  /** Room between planned revenue and the cap. Capped T&M only. */
+  /** Room between planned revenue and the cap. Capped T&M only. Negative once it binds. */
   capHeadroomPct: number | null;
+  /**
+   * The cap, and what the plan would have billed without it. Capped T&M only.
+   *
+   * Present so the app can say *how much* work is going unbilled rather than only that
+   * a percentage is negative. A cap that binds is a fixed price wearing a T&M label, and
+   * the difference between the two figures is the concession being made.
+   */
+  cap: Money | null;
+  revenueBeforeCap: Money | null;
   notes: string[];
 }
 
@@ -129,6 +138,8 @@ export function computeStructure(
         upside: null,
         breakEvenOverrunPct: null,
         capHeadroomPct: null,
+        cap: null,
+        revenueBeforeCap: null,
         notes: ['Revenue flexes with actual delivery. Overrun risk sits with the client.'],
       };
     }
@@ -138,7 +149,9 @@ export function computeStructure(
       const revenue = Math.min(planned, structure.cap);
       const headroom = ratio(structure.cap - planned, planned);
       if (structure.cap <= planned) {
-        notes.push('The cap is at or below planned revenue — this behaves as a fixed price.');
+        notes.push(
+          `The cap binds: the plan bills ${formatMoney(planned)} at the agreed rates but only ${formatMoney(structure.cap)} can be invoiced, so ${formatMoney(planned - structure.cap)} of delivery goes unpaid. This behaves as a fixed price.`,
+        );
       }
       // Bill T&M week by week until the cap binds.
       const revenueByWeek = empty();
@@ -159,6 +172,8 @@ export function computeStructure(
         upside: null,
         breakEvenOverrunPct: ratio(structure.cap - cost, cost),
         capHeadroomPct: headroom,
+        cap: structure.cap,
+        revenueBeforeCap: planned,
         notes: [
           ...notes,
           'Asymmetric: we take the downside above the cap, the client takes the benefit below it.',
@@ -181,6 +196,8 @@ export function computeStructure(
         upside: null,
         breakEvenOverrunPct: ratio(revenue - cost, cost),
         capHeadroomPct: null,
+        cap: null,
+        revenueBeforeCap: null,
         notes,
       };
     }
@@ -225,6 +242,8 @@ export function computeStructure(
         upside: null,
         breakEvenOverrunPct: ratio(revenue - cost, cost),
         capHeadroomPct: null,
+        cap: null,
+        revenueBeforeCap: null,
         notes,
       };
     }
@@ -248,6 +267,8 @@ export function computeStructure(
         upside: null,
         breakEvenOverrunPct: ratio(revenue - cost, cost),
         capHeadroomPct: null,
+        cap: null,
+        revenueBeforeCap: null,
         notes: ['Utilisation risk: under-used capacity still costs us; over-demand creeps scope.'],
       };
     }
@@ -288,6 +309,8 @@ export function computeStructure(
         // absorb an overrun.
         breakEvenOverrunPct: ratio(structure.baseFee - cost, cost),
         capHeadroomPct: null,
+        cap: null,
+        revenueBeforeCap: null,
         notes,
       };
     }

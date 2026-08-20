@@ -66,7 +66,7 @@ The thing that wins bids. Same delivery plan, many commercial shapes, compared s
 - [x] Risk & contingency: contingency on cost, downside/expected/upside cases, break-even overrun, cash exposure
 - [x] Guardrails: thresholds with a plain-English explanation and a named approver
 - [x] Leave as a commercial lever — per-person entitlement, adjustment and margin effect, structure-aware. **Magnitude unproven until Q21** (is a cost rate built on billable days or working days?)
-- [ ] Show cap status on a capped T&M deal — `capHeadroomPct` is computed and never displayed, so a binding cap clips revenue silently
+- [x] Show cap status on a capped T&M deal — how much delivery goes unpaid, not just a percentage
 - [ ] Blended-rate break-even mix
 - [ ] Discount ladders (volume, term, strategic)
 
@@ -98,7 +98,7 @@ One model, three audiences. This is where the "no repeatable output" pain is kil
 ### Carried into M2/M3 as the app was used
 
 - [x] Undo and redo across the model, with a run of keystrokes in one field as a single step
-- [ ] History that survives a reload
+- [x] History that survives a reload — and the double-push bug in undo that persisting it exposed
 
 ## M4 — Collaboration
 

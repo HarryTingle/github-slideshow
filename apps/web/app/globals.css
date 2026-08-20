@@ -602,3 +602,13 @@ input.rate-input.overridden { border-color: var(--olive-500); background: var(--
 .leave-table { font-size: 13px; }
 .leave-table td, .leave-table th { padding: 7px 10px; }
 input.rate-input.adjust { width: 62px; text-align: center; }
+
+/* ---------- Capped T&M ---------- */
+
+.cap-band {
+  display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap;
+  background: var(--sand-100); border-left: 2px solid var(--olive-500);
+  padding: 10px 14px; border-radius: 0 6px 6px 0; margin-top: 14px;
+}
+.cap-band.binds { background: var(--status-breach-bg); border-left-color: var(--status-breach); }
+.cap-band .small { flex: 1; min-width: 260px; color: var(--ink-700); }

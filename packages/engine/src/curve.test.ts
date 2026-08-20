@@ -145,3 +145,46 @@ describe('a milestone schedule that does not add up', () => {
     expect(result.notes.some((note) => note.includes('contract value'))).toBe(false);
   });
 });
+
+describe('what a capped T&M deal reports about its cap', () => {
+  const cappedAt = (cap: number) => {
+    const definition: Scenario = {
+      id: 'sc-cap',
+      name: 'Capped',
+      structure: { type: 'cappedTm', rateCardId: 'rc-meridian', cap },
+    };
+    const engagement = { ...meridian, scenarios: [definition] };
+    const plan = computePlan(engagement, billedRatesFor(engagement, definition));
+    return computeScenario(engagement, plan, definition).parts[0]!.structure;
+  };
+
+  it('reports the cap and what the plan would have billed without it', () => {
+    // Previously only a percentage came back, and nothing on screen used it — a binding
+    // cap clipped revenue in silence.
+    const tight = cappedAt(pounds(180000));
+    expect(tight.cap).toBe(pounds(180000));
+    expect(tight.revenueBeforeCap).toBeGreaterThan(pounds(180000));
+    expect(tight.revenue).toBe(pounds(180000));
+    expect(tight.capHeadroomPct!).toBeLessThan(0);
+    expect(tight.notes.some((note) => note.includes('goes unpaid'))).toBe(true);
+  });
+
+  it('leaves headroom, and says nothing alarming, when the cap is above the plan', () => {
+    const loose = cappedAt(pounds(400000));
+    expect(loose.revenue).toBe(loose.revenueBeforeCap);
+    expect(loose.capHeadroomPct!).toBeGreaterThan(0);
+    expect(loose.notes.some((note) => note.includes('goes unpaid'))).toBe(false);
+  });
+
+  it('is null on every structure that has no cap', () => {
+    for (const { structure } of structures(meridian)) {
+      if (structure.type === 'cappedTm') continue;
+      const definition: Scenario = { id: 'sc-x', name: 'x', structure };
+      const engagement = { ...meridian, scenarios: [definition] };
+      const plan = computePlan(engagement, billedRatesFor(engagement, definition));
+      const result = computeScenario(engagement, plan, definition).parts[0]!.structure;
+      expect(result.cap).toBeNull();
+      expect(result.revenueBeforeCap).toBeNull();
+    }
+  });
+});

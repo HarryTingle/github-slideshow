@@ -23,6 +23,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
  */
 
 const STORAGE_KEY = 'scope.engagement.v1';
+const HISTORY_KEY = 'scope.history.v1';
 
 interface ModelContextValue {
   engagement: Engagement;
@@ -71,9 +72,29 @@ interface HistoryEntry {
   label: string;
 }
 
+/** The undo and redo stacks as they are written to storage. */
+interface PersistedHistory {
+  past: HistoryEntry[];
+  future: HistoryEntry[];
+}
+
 /** How long a run of edits to the same field stays a single undo step. */
 const COALESCE_MS = 700;
 const HISTORY_LIMIT = 100;
+
+/**
+ * How many steps survive a reload.
+ *
+ * Undo living only in memory meant a stray refresh threw away an afternoon of pricing
+ * with no warning — the one failure this app has no answer for, since the model itself
+ * is saved and the way back to it was not. A document is around 7KB, so thirty steps is
+ * a couple of hundred kilobytes: worth the space, and far short of the in-memory depth
+ * because nobody reloads and then undoes a hundred times.
+ */
+const PERSISTED_HISTORY = 30;
+
+/** Writing the stack on every keystroke would be wasteful; a beat behind is enough. */
+const HISTORY_WRITE_MS = 800;
 
 export function ModelProvider({ children }: { children: React.ReactNode }) {
   const [engagement, setEngagement] = useState<Engagement>(meridian);
@@ -85,6 +106,34 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
   const [past, setPast] = useState<HistoryEntry[]>([]);
   const [future, setFuture] = useState<HistoryEntry[]>([]);
   const lastEdit = useRef<{ coalesce?: string; at: number }>({ at: 0 });
+  const historyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /*
+   * The document and both stacks are mirrored into refs, and every change goes through
+   * the setters below.
+   *
+   * This is not belt-and-braces — it is the only correct shape. The previous version
+   * pushed the undo step from *inside* a `setEngagement` updater, and React invokes
+   * updaters more than once on purpose to catch exactly that. Every edit therefore
+   * landed twice on the stack, so undo appeared to do nothing every other press. The
+   * rule it broke is simple: a state updater must be pure, and pushing history is not.
+   */
+  const engagementRef = useRef<Engagement>(meridian);
+  const pastRef = useRef<HistoryEntry[]>([]);
+  const futureRef = useRef<HistoryEntry[]>([]);
+
+  const applyDocument = useCallback((next: Engagement) => {
+    engagementRef.current = next;
+    setEngagement(next);
+  }, []);
+  const applyPast = useCallback((next: HistoryEntry[]) => {
+    pastRef.current = next;
+    setPast(next);
+  }, []);
+  const applyFuture = useCallback((next: HistoryEntry[]) => {
+    futureRef.current = next;
+    setFuture(next);
+  }, []);
 
   // Load after mount so the server and client render the same thing first.
   useEffect(() => {
@@ -98,15 +147,31 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
           JSON.parse(saved) as Engagement,
           practiceReference,
         );
-        setEngagement(reconciled);
+        applyDocument(reconciled);
         setReconciliation(notes);
         setIsDirty(true);
+
+        // History is restored only alongside a saved document. Undoing into a state that
+        // belongs to a different model would be worse than having no history at all.
+        const savedHistory = window.localStorage.getItem(HISTORY_KEY);
+        if (savedHistory) {
+          const { past: behind, future: ahead } = JSON.parse(savedHistory) as PersistedHistory;
+          // Every stored step gets the same treatment as the live document, or undo
+          // would quietly restore whatever rate card existed when the step was taken.
+          const onto = (entries: HistoryEntry[]) =>
+            (entries ?? []).map((entry) => ({
+              ...entry,
+              engagement: reconcileReferences(entry.engagement, practiceReference).engagement,
+            }));
+          applyPast(onto(behind));
+          applyFuture(onto(ahead));
+        }
       }
     } catch {
       // A corrupt saved model should never stop the app loading.
     }
     setHydrated(true);
-  }, []);
+  }, [applyDocument, applyPast, applyFuture]);
 
   useEffect(() => {
     if (!hydrated || !isDirty) return;
@@ -117,74 +182,107 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
     }
   }, [engagement, hydrated, isDirty]);
 
-  const update = useCallback((mutate: (draft: Engagement) => Engagement, edit?: EditMeta) => {
-    const now = Date.now();
-    const previous = lastEdit.current;
-    const continues =
-      edit?.coalesce != null &&
-      edit.coalesce === previous.coalesce &&
-      now - previous.at < COALESCE_MS;
-
-    setEngagement((current) => {
-      const next = mutate(current);
-      if (next === current) return current;
-      // A continued run of edits to the same field extends the step already on the
-      // stack rather than adding another, so undo takes back the whole change.
-      if (!continues) {
-        setPast((entries) =>
-          [...entries, { engagement: current, label: edit?.label ?? 'change' }].slice(-HISTORY_LIMIT),
+  // The stack is written a beat behind the model, and only the tail of it.
+  useEffect(() => {
+    if (!hydrated || !isDirty) return;
+    if (historyTimer.current) clearTimeout(historyTimer.current);
+    historyTimer.current = setTimeout(() => {
+      try {
+        window.localStorage.setItem(
+          HISTORY_KEY,
+          JSON.stringify({
+            past: past.slice(-PERSISTED_HISTORY),
+            future: future.slice(-PERSISTED_HISTORY),
+          } satisfies PersistedHistory),
         );
-        setFuture([]);
+      } catch {
+        // Over quota. The model itself matters more than the way back to it, so drop
+        // the stored history rather than let it crowd the document out.
+        try {
+          window.localStorage.removeItem(HISTORY_KEY);
+        } catch {
+          /* nothing left to try */
+        }
       }
-      return next;
-    });
+    }, HISTORY_WRITE_MS);
+    return () => {
+      if (historyTimer.current) clearTimeout(historyTimer.current);
+    };
+  }, [past, future, hydrated, isDirty]);
 
-    lastEdit.current = { coalesce: edit?.coalesce, at: now };
-    setIsDirty(true);
-  }, []);
+  const update = useCallback(
+    (mutate: (draft: Engagement) => Engagement, edit?: EditMeta) => {
+      const current = engagementRef.current;
+      const next = mutate(current);
+      if (next === current) return;
+      // An edit that changes nothing is not a step. Editors rebuild the document rather
+      // than mutate it, so a keystroke landing on the value already there produces a new
+      // object with identical content, which a reference check waves through.
+      if (JSON.stringify(next) === JSON.stringify(current)) return;
+
+      const now = Date.now();
+      const previous = lastEdit.current;
+      // A continued run of edits to the same field extends the step already on the stack
+      // rather than adding another, so undo takes back the whole change.
+      const continues =
+        edit?.coalesce != null &&
+        edit.coalesce === previous.coalesce &&
+        now - previous.at < COALESCE_MS;
+
+      if (!continues) {
+        applyPast(
+          [...pastRef.current, { engagement: current, label: edit?.label ?? 'change' }].slice(
+            -HISTORY_LIMIT,
+          ),
+        );
+        applyFuture([]);
+      }
+
+      lastEdit.current = { coalesce: edit?.coalesce, at: now };
+      applyDocument(next);
+      setIsDirty(true);
+    },
+    [applyDocument, applyPast, applyFuture],
+  );
 
   const undo = useCallback(() => {
-    setPast((entries) => {
-      const entry = entries[entries.length - 1];
-      if (!entry) return entries;
-      setEngagement((current) => {
-        setFuture((ahead) => [...ahead, { engagement: current, label: entry.label }]);
-        return entry.engagement;
-      });
-      lastEdit.current = { at: 0 };
-      setIsDirty(true);
-      return entries.slice(0, -1);
-    });
-  }, []);
+    const entries = pastRef.current;
+    const entry = entries[entries.length - 1];
+    if (!entry) return;
+    applyFuture([...futureRef.current, { engagement: engagementRef.current, label: entry.label }]);
+    applyPast(entries.slice(0, -1));
+    applyDocument(entry.engagement);
+    lastEdit.current = { at: 0 };
+    setIsDirty(true);
+  }, [applyDocument, applyPast, applyFuture]);
 
   const redo = useCallback(() => {
-    setFuture((entries) => {
-      const entry = entries[entries.length - 1];
-      if (!entry) return entries;
-      setEngagement((current) => {
-        setPast((behind) => [...behind, { engagement: current, label: entry.label }]);
-        return entry.engagement;
-      });
-      lastEdit.current = { at: 0 };
-      setIsDirty(true);
-      return entries.slice(0, -1);
-    });
-  }, []);
+    const entries = futureRef.current;
+    const entry = entries[entries.length - 1];
+    if (!entry) return;
+    applyPast([...pastRef.current, { engagement: engagementRef.current, label: entry.label }]);
+    applyFuture(entries.slice(0, -1));
+    applyDocument(entry.engagement);
+    lastEdit.current = { at: 0 };
+    setIsDirty(true);
+  }, [applyDocument, applyPast, applyFuture]);
 
   const reset = useCallback(() => {
-    setEngagement(meridian);
+    applyDocument(meridian);
     setSensitivity(NO_SENSITIVITY);
     setIsDirty(false);
     setReconciliation([]);
-    setPast([]);
-    setFuture([]);
+    applyPast([]);
+    applyFuture([]);
     lastEdit.current = { at: 0 };
+    if (historyTimer.current) clearTimeout(historyTimer.current);
     try {
       window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(HISTORY_KEY);
     } catch {
       /* nothing to do */
     }
-  }, []);
+  }, [applyDocument, applyPast, applyFuture]);
 
   const stressed = useMemo(
     () => applySensitivity(engagement, sensitivity),

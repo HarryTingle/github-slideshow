@@ -328,15 +328,21 @@ export default function CommercialsPage() {
                   floor={0.4}
                 />
               ) : (
-                <div className="stat">
-                  <div className="label">Upside</div>
-                  <div className="value sm" style={{ color: 'var(--ink-400)' }}>
-                    Unbounded
-                  </div>
-                  <div className="foot">No cap — cannot be shown as a figure</div>
-                </div>
+                <UpsideAbsent parts={selected.scenario.parts} />
               )}
             </div>
+
+            {selected.scenario.parts.map((part) =>
+              part.structure.cap != null ? (
+                <CapBand
+                  key={`cap-${part.label}`}
+                  label={selected.scenario.isHybrid ? part.label : null}
+                  cap={part.structure.cap}
+                  before={part.structure.revenueBeforeCap ?? 0}
+                  headroomPct={part.structure.capHeadroomPct}
+                />
+              ) : null,
+            )}
 
             <div className="sep" />
 
@@ -344,18 +350,26 @@ export default function CommercialsPage() {
               <GuardrailRow key={status.guardrail.id} status={status} />
             ))}
 
-            {selected.scenario.notes.length > 0 && (
-              <>
-                <div className="sep" />
-                <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
-                  {selected.scenario.notes.map((note) => (
-                    <li key={note} style={{ marginBottom: 4 }}>
-                      {note}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
+            {/*
+              The cap band above states the binding note in full, so it is dropped from
+              this list rather than printed twice on one screen. The engine keeps it, so
+              it still travels to the Excel export and into an issued pack.
+            */}
+            {(() => {
+              const notes = selected.scenario.notes.filter((note) => !note.startsWith('The cap binds:'));
+              return notes.length > 0 ? (
+                <>
+                  <div className="sep" />
+                  <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
+                    {notes.map((note) => (
+                      <li key={note} style={{ marginBottom: 4 }}>
+                        {note}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null;
+            })()}
 
             {selected.scenario.isHybrid && (
               <>
@@ -386,6 +400,78 @@ export default function CommercialsPage() {
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * Why there is no upside figure — which is not the same reason every time.
+ *
+ * A T&M deal has no ceiling, so an upside cannot be written down. A capped one has the
+ * tightest ceiling there is. Saying "no cap" on a capped deal was the app contradicting
+ * itself two inches above a band explaining the cap.
+ */
+function UpsideAbsent({ parts }: { parts: { structure: { cap: number | null; label: string } }[] }) {
+  const cap = parts.find((part) => part.structure.cap != null)?.structure.cap ?? null;
+  return (
+    <div className="stat">
+      <div className="label">Upside</div>
+      <div className="value sm" style={{ color: 'var(--ink-400)' }}>
+        {cap == null ? 'Unbounded' : 'None'}
+      </div>
+      <div className="foot">
+        {cap == null
+          ? 'No ceiling — cannot be shown as a figure'
+          : `Billing stops at the ${formatMoney(cap)} cap`}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Where a capped T&M deal actually stands against its cap.
+ *
+ * A binding cap was previously invisible: revenue was silently clipped and nothing on
+ * screen said so. The number that matters is not the percentage — it is how much
+ * delivery goes unpaid, because that is the concession being made.
+ */
+function CapBand({
+  label,
+  cap,
+  before,
+  headroomPct,
+}: {
+  label: string | null;
+  cap: number;
+  before: number;
+  headroomPct: number | null;
+}) {
+  const binds = before >= cap;
+  const gap = Math.abs(before - cap);
+
+  return (
+    <div className={`cap-band${binds ? ' binds' : ''}`}>
+      <span className={`badge ${binds ? 'breach' : 'good'}`}>
+        <span className="dot" />
+        {binds ? 'Cap binds' : 'Within cap'}
+      </span>
+      <span className="small">
+        {label && <strong>{label}: </strong>}
+        {binds ? (
+          <>
+            The plan bills <strong>{formatMoney(before)}</strong> at the agreed rates against a
+            cap of <strong>{formatMoney(cap)}</strong> — <strong>{formatMoney(gap)}</strong> of
+            delivery goes unpaid. This is a fixed price wearing a T&amp;M label.
+          </>
+        ) : (
+          <>
+            The plan bills <strong>{formatMoney(before)}</strong> against a cap of{' '}
+            <strong>{formatMoney(cap)}</strong>, leaving <strong>{formatMoney(gap)}</strong> of
+            headroom{headroomPct == null ? '' : ` (${formatPct(headroomPct, 0)})`} before the
+            client stops paying for time.
+          </>
+        )}
+      </span>
+    </div>
   );
 }
 

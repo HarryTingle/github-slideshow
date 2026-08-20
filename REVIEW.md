@@ -47,6 +47,23 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-20 — Undo survives a reload, and the bug that found
+**Reviewed:** history persistence in `apps/web/lib/store.tsx`, and cap status on capped T&M.
+
+**The feature was the easy half.** A document is 7KB, so keeping the last thirty steps costs a couple of hundred kilobytes — worth it against losing an afternoon's pricing to a stray refresh, which was the one failure the app had no answer for. The stack is written a beat behind the model, restored only alongside a saved document, reconciled onto the current rate card exactly as the live document is, and dropped rather than allowed to crowd the model out if storage runs short.
+
+**Then it exposed a real bug in undo itself.** Two edits produced four history entries, and every other press of Undo did nothing visible. The cause: the undo step was pushed from *inside* a `setEngagement` updater. React invokes updaters more than once deliberately, to catch exactly that kind of impurity — so every edit landed on the stack twice. Persisting the stack made it obvious; in memory it had been quietly doubling the depth and halving the apparent effect of the control since undo shipped.
+
+The fix was not a patch. The document and both stacks are now mirrored into refs, every change goes through a single setter, and `update`, `undo` and `redo` compute outside any updater. State updaters are pure again, which is the rule that was broken.
+
+Two edits now produce two entries. Undo walks back to the original, redo walks forward to the edit, both controls disable at their ends, and all of it survives a reload. Reset clears the stack with the model.
+
+**A first guess that was wrong, and worth recording.** The first fix I tried was an equality guard — skip the push when the new document matches the current one. It changed nothing, because the entries were genuinely distinct: clearing a cell before setting it is a real intermediate state. The guard was keeping honest company with a bug it could not reach. It stayed in, because "an edit that changes nothing is not a step" is true on its own terms, but it was not the answer and I should not have assumed it was before looking.
+
+**Cap status, previously invisible.** `capHeadroomPct` was computed and displayed nowhere, so a capped T&M deal clipped revenue in silence. The structure now returns the cap and what the plan would have billed without it, because the number that matters is not a percentage — it is how much delivery goes unpaid. On a £180,000 cap against a £239,797 plan: **£59,797 unpaid, and a fixed price wearing a T&M label.**
+
+**Two pieces of copy contradicting themselves, found by looking at the rendered page.** The Upside tile read "Unbounded — no cap" on a *capped* deal, two inches above a band explaining the cap; it now reads "None — billing stops at the £180,000 cap". And the band was restating a note printed directly beneath it, so that note is dropped from the list while staying in the engine, where the Excel export and an issued pack still carry it.
+
 ### 2026-08-20 — An adversarial audit of the engine, and three defects in the stress test
 **Reviewed:** `applySensitivity`, the milestone structure, and the weekly revenue curve of every commercial shape. Prompted by Harry's priority: modelling accuracy first.
 
