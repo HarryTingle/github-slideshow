@@ -24,28 +24,31 @@ Establish the operating system for the work and extract the real domain model fr
 - [ ] Ingest existing Excel delivery & commercial models into `/context/inputs` → run `routines/model-intake.md`
 - [x] Ingest rate card and role/seniority taxonomy → grade ladder, capabilities, charge and cost rates, annual leave, all in `context/domain-model.md` §3 and asserted by test
 - [ ] Ingest brand guidelines and proposal templates → constrains output design in M3
-- [ ] Confirm stack and architecture decision (`context/decisions/0002-stack-and-architecture.md`)
+- [x] Confirm stack and architecture decision (`context/decisions/0002-stack-and-architecture.md`) — accepted and built as described
 - [ ] Pick the reference engagement: one real, recently-run engagement whose model the app must reproduce exactly
 
 **Done when:** the domain model in `/context` is derived from real artefacts rather than first principles, and one reference engagement is chosen as the golden test case.
 
 ---
 
-## M1 — The modelling engine
+## M1 — The modelling engine *(built against invented data; unproven against a real model)*
 
-A pure, tested calculation core. No UI. The unit of proof is: *the engine reproduces the reference engagement's Excel model, to the penny.*
+A pure, tested calculation core. No UI. The unit of proof is: *the engine reproduces the reference engagement's Excel model, to the penny.* **Every capability below is built and tested. None of it has been checked against a real engagement**, because the reference model has not been chosen — so the milestone is not closed.
 
-- [ ] M1-0 Remove the Learning Lab / reveal.js scaffold and initialise the real project
-- [ ] Domain primitives: role, grade, person, availability, rate (cost and charge), calendar
-- [ ] Delivery plan: phases, workstreams, milestones, dependencies, durations in ISO weeks
-- [ ] Resource model: allocation of people/roles to workstreams over time, at fractional FTE
-- [ ] Capacity truth: utilisation, holiday, ramp-up, partial availability, shared people across engagements
-- [ ] Cost model: cost of delivery from grade cost rates, including non-billable overhead
-- [ ] Revenue model: T&M as the base case
-- [ ] Derived metrics: gross margin, blended day rate, effective rate, contribution, burn curve by week
-- [ ] Golden-file test reproducing the reference engagement end to end
+- [x] M1-0 Remove the Learning Lab / reveal.js scaffold and initialise the real project
+- [x] Domain primitives: role, grade, person, availability, rate (cost and charge), calendar
+- [x] Delivery plan: phases, workstreams, milestones, durations in ISO weeks
+- [ ] Dependencies between workstreams — deliberately deferred; nothing has needed them yet
+- [x] Resource model: allocation of people/roles to workstreams over time, at fractional FTE
+- [x] Capacity truth: holiday (annual allowance and booked leave), ramp-up, partial availability
+- [ ] Utilisation as a pricing assumption — **blocked on Q3**; the engine deliberately has no utilisation input
+- [ ] Shared people across engagements — **blocked on Q20**; single-engagement only today
+- [x] Cost model: cost of delivery from grade cost rates, including non-billable overhead
+- [x] Revenue model: T&M as the base case
+- [x] Derived metrics: gross margin, blended day rate, effective rate, contribution, burn curve by week
+- [ ] Golden-file test reproducing the reference engagement end to end — **blocked on Q1**
 
-**Done when:** a spreadsheet-free engine produces the same totals as the reference Excel model, and every number is unit tested.
+**Done when:** a spreadsheet-free engine produces the same totals as the reference Excel model, and every number is unit tested. The second half is true; the first cannot be attempted yet.
 
 **Spec:** `specs/0001-modelling-engine-core.md`, `specs/0002-delivery-plan-and-resourcing.md`
 

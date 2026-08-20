@@ -258,6 +258,8 @@ Live list. Move to *Resolved* with the answer and the date — do not delete.
 | Q12 | Is a stated resourcing capacity constraint (currently hard-coded at 5 FTE on the demand chart) a real concept, and where does the number come from? | It is the one figure in the UI not sourced from the model. | Harry | 2026-08-19 |
 | Q13 | Should moving a workstream move the team staffed on it, or hold them still? | Currently it moves them, on the reasoning that a workstream that slips takes its team with it. The opposite is defensible when people are committed to dates rather than to work. | Harry | 2026-08-19 |
 | Q14 | Does a person's level ever change mid-engagement (promotion, or booked at a different grade per workstream)? | Level is currently held per assignment, so the same person can sit at two levels. That may be a feature or a trap. | Harry | 2026-08-19 |
+| Q19 | In the resourcing extract, Billable Days 253 reconciles to 261 weekdays less 8 public holidays — so the 23-day leave allowance is **not** deducted. Is it applied downstream, or not at all? | If not, planned capacity is overstated by ~9% and every fixed-price bid on it is under-resourced by the same margin. The engine currently deducts leave, so it and the spreadsheet disagree by design until this is answered. | Harry | 2026-08-19 |
+| Q20 | Is a person ever shared across concurrent engagements at bid stage, and if so how is their availability split? | Determines whether cross-engagement capacity belongs in the engine at all, or stays a resourcing-system concern. Currently single-engagement only. | Harry | 2026-08-20 |
 
 ### Resolved
 
