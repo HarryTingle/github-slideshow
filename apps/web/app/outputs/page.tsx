@@ -1,11 +1,13 @@
 'use client';
 
-import { formatDays, formatMoney, formatPct, weekStartLabel } from '@scope/engine';
+import { AUDIENCE_LABELS, formatDays, formatMoney, formatPct, weekStartLabel } from '@scope/engine';
 import { useState } from 'react';
 import { CumulativeChart, RankBars } from '@/components/charts';
 import { GuardrailRow, MarginTone } from '@/components/bits';
 import { ExportButton } from '@/components/ExportButton';
-import { useModel, useSelectedScenario } from '@/lib/store';
+import { SnapshotPanel } from '@/components/SnapshotPanel';
+import { formatIssuedAt, useSnapshots } from '@/lib/snapshots';
+import { FrozenModelProvider, useModel, useSelectedScenario } from '@/lib/store';
 
 type View = 'resourcing' | 'client' | 'slt';
 
@@ -17,38 +19,86 @@ const VIEWS: { id: View; label: string }[] = [
 
 export default function OutputsPage() {
   const [view, setView] = useState<View>('resourcing');
-  const { stressed, analysis } = useModel();
-  const selected = useSelectedScenario();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const snapshots = useSnapshots();
+  const open = snapshots.snapshots.find((snapshot) => snapshot.id === openId) ?? null;
 
   return (
     <>
       <div className="row gap-16 wrap" style={{ marginBottom: 18 }}>
         <div className="segmented">
           {VIEWS.map((entry) => (
-            <button key={entry.id} aria-pressed={view === entry.id} onClick={() => setView(entry.id)}>
+            <button
+              key={entry.id}
+              aria-pressed={view === entry.id}
+              onClick={() => setView(entry.id)}
+            >
               {entry.label}
             </button>
           ))}
         </div>
       </div>
 
+      {open && (
+        <div className="frozen-bar">
+          <span className="badge neutral">
+            <span className="dot" />v{open.version}
+          </span>
+          <span className="small">
+            Reading the <strong>{AUDIENCE_LABELS[open.audience]}</strong> pack issued{' '}
+            {formatIssuedAt(open.issuedAt)} by {open.issuedBy}. These are the numbers its
+            recipient saw — the live model is not being shown, and cannot be edited from here.
+          </span>
+          <button className="tiny" onClick={() => setOpenId(null)}>
+            Back to the live model
+          </button>
+        </div>
+      )}
+
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="card-head">
           <h3>Take it away</h3>
           <span className="card-note">
-            Formulas, not frozen totals — the workbook can be checked, not just read
+            {open
+              ? `Exporting v${open.version} as it was issued`
+              : 'Export it, or issue it and freeze what you sent'}
           </span>
         </div>
         <div className="card-body">
-          <ExportButton />
+          {open ? (
+            <FrozenModelProvider engagement={open.engagement} scenarioId={open.scenarioId}>
+              <ExportButton />
+            </FrozenModelProvider>
+          ) : (
+            <ExportButton />
+          )}
+          <div className="sep" />
+          <SnapshotPanel store={snapshots} audience={view} openId={openId} onOpen={setOpenId} />
         </div>
       </div>
 
+      {open ? (
+        <FrozenModelProvider engagement={open.engagement} scenarioId={open.scenarioId}>
+          <Views view={view} />
+        </FrozenModelProvider>
+      ) : (
+        <Views view={view} />
+      )}
+    </>
+  );
+}
+
+function Views({ view }: { view: View }) {
+  const { stressed, analysis } = useModel();
+  const selected = useSelectedScenario();
+
+  return (
+    <>
       {view === 'resourcing' && <ResourcingView />}
       {view === 'client' && <ClientView />}
       {view === 'slt' && <SltView />}
 
-      <p className="tiny muted mt-24" style={{ marginTop: 24 }}>
+      <p className="tiny muted" style={{ marginTop: 24 }}>
         {stressed.name} · {analysis.plan.totalEffortDays.toFixed(1)} effort days · “
         {selected.scenario.name}”
       </p>

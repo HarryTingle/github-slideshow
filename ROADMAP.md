@@ -4,7 +4,7 @@
 **Strategy:** Internal first, then productise. We are customer zero.
 **Anchor:** Milestone 1 is a correct, tested modelling engine. Everything else is presentation on top of maths that must be right.
 
-Last reviewed: 2026-08-19
+Last reviewed: 2026-08-20
 
 ---
 
@@ -71,7 +71,7 @@ The thing that wins bids. Same delivery plan, many commercial shapes, compared s
 
 ---
 
-## M3 — Shareable outputs *(on screen; export still to do)*
+## M3 — Shareable outputs *(built, bar the brand)*
 
 One model, three audiences. This is where the "no repeatable output" pain is killed.
 
@@ -81,7 +81,7 @@ One model, three audiences. This is where the "no repeatable output" pain is kil
 - [x] Traceability: hover any allocation cell for the arithmetic behind it
 - [x] Excel export — six sheets, formulas rather than frozen totals, every aggregate summing the Detail sheet
 - [ ] Brand application from the ingested guidelines — **blocked on M0**
-- [ ] Output snapshots with a recorded version, so an issued pack does not change
+- [x] Output snapshots with a recorded version, so an issued pack does not change — and says what has moved since
 - [ ] Approval trail
 
 **Done when:** a full engagement can go from blank model to client-ready proposal section and SLT pack without touching Excel.

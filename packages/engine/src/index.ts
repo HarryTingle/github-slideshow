@@ -9,4 +9,5 @@ export * from './edit';
 export * from './reference';
 export * from './pricing';
 export * from './workbook';
+export * from './snapshot';
 export { meridian, practiceReference } from './seed';

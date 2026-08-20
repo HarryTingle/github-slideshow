@@ -250,6 +250,10 @@ input[type="text"], input[type="number"], select {
   padding: 6px 9px; width: 100%;
   font-variant-numeric: tabular-nums;
 }
+input:disabled, select:disabled { background: var(--sand-100); color: var(--ink-300); cursor: not-allowed; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.primary:disabled:hover { background: var(--olive-600); border-color: var(--olive-600); }
+
 input:focus, select:focus, button:focus-visible {
   outline: 2px solid var(--olive-500); outline-offset: 1px; border-color: var(--olive-500);
 }
@@ -524,3 +528,68 @@ input.rate-input.overridden { border-color: var(--olive-500); background: var(--
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
+
+/* ---------- Issued packs ---------- */
+
+/*
+ * The frozen bar has to be unmissable. Reading an issued pack and thinking it is the
+ * live model is the exact confusion snapshots exist to end, so the page states which
+ * one it is showing rather than leaving it to be inferred from the numbers.
+ */
+.frozen-bar {
+  position: sticky; top: 62px; z-index: 30;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  background: var(--olive-050); border: 1px solid var(--olive-200);
+  border-left: 3px solid var(--olive-600);
+  border-radius: var(--radius); padding: 11px 16px; margin-bottom: 18px;
+}
+.frozen-bar .small { flex: 1; min-width: 280px; color: var(--ink-700); }
+.frozen-bar button { margin-left: auto; }
+
+.issue-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.issue-row .field { min-width: 160px; }
+.issue-row .field.grow { flex: 1; min-width: 220px; }
+
+.issued { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.issued-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 6px 8px; color: var(--ink-700);
+}
+.issued-toggle .caret { color: var(--ink-300); width: 10px; }
+
+.snapshot-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+
+.snapshot {
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 11px 14px; background: var(--surface-raised);
+}
+.snapshot.open { border-color: var(--olive-500); background: var(--olive-050); }
+
+.snapshot-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.snapshot-version {
+  font-family: var(--font-serif), Georgia, serif; font-size: 19px; color: var(--ink-900);
+  min-width: 34px; font-variant-numeric: tabular-nums;
+}
+.snapshot-id { flex: 1; min-width: 220px; }
+.snapshot-actions { display: flex; gap: 4px; }
+
+.snapshot-headline { font-size: 12.5px; color: var(--ink-700); margin-top: 7px; }
+.snapshot-headline.quiet { color: var(--ink-400); }
+
+.snapshot-warning {
+  margin-top: 9px; padding: 8px 12px; font-size: 12.5px;
+  background: var(--status-breach-bg); color: var(--ink-800);
+  border-left: 2px solid var(--status-breach); border-radius: 0 6px 6px 0;
+}
+
+.snapshot-changes { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.snapshot-changes .structural { margin-top: 14px; }
+
+.change-line { display: flex; gap: 9px; align-items: baseline; padding: 3px 0; }
+.change-kind {
+  font-variant-numeric: tabular-nums; width: 14px; text-align: center; flex: none;
+  font-size: 13px; font-weight: 600;
+}
+.change-kind.added { color: var(--status-good); }
+.change-kind.removed { color: var(--status-breach); }
+.change-kind.changed { color: var(--ink-300); }

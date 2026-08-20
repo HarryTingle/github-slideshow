@@ -45,6 +45,8 @@ interface ModelContextValue {
   isDirty: boolean;
   selectedScenarioId: string;
   setSelectedScenarioId: (id: string) => void;
+  /** True when what is on screen is a frozen snapshot rather than the working model. */
+  readOnly: boolean;
 }
 
 const ModelContext = createContext<ModelContextValue | null>(null);
@@ -210,6 +212,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
       dismissReconciliation: () => setReconciliation([]),
       selectedScenarioId,
       setSelectedScenarioId,
+      readOnly: false,
     }),
     [
       engagement,
@@ -228,6 +231,54 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
       selectedScenarioId,
     ],
   );
+
+  return <ModelContext.Provider value={value}>{children}</ModelContext.Provider>;
+}
+
+/**
+ * Render a frozen engagement in place of the live one.
+ *
+ * An issued pack has to show what its recipient saw, so the Outputs views are handed a
+ * different model rather than being taught about snapshots. Read-only is structural:
+ * every mutator here is a no-op, so nothing rendered inside can write to the working
+ * document even by accident.
+ */
+export function FrozenModelProvider({
+  engagement,
+  scenarioId,
+  children,
+}: {
+  engagement: Engagement;
+  scenarioId: string;
+  children: React.ReactNode;
+}) {
+  const value = useMemo<ModelContextValue>(() => {
+    const analysis = analyse(engagement);
+    const noop = () => {};
+    return {
+      engagement,
+      // A snapshot is what was issued, not a stress of it. Sensitivity does not apply.
+      stressed: engagement,
+      analysis,
+      findings: validate(engagement, analysis.plan),
+      sensitivity: NO_SENSITIVITY,
+      setSensitivity: noop,
+      update: noop,
+      reset: noop,
+      undo: noop,
+      redo: noop,
+      undoLabel: null,
+      redoLabel: null,
+      isDirty: false,
+      reconciliation: [],
+      dismissReconciliation: noop,
+      selectedScenarioId: engagement.scenarios.some((scenario) => scenario.id === scenarioId)
+        ? scenarioId
+        : (engagement.scenarios[0]?.id ?? scenarioId),
+      setSelectedScenarioId: noop,
+      readOnly: true,
+    };
+  }, [engagement, scenarioId]);
 
   return <ModelContext.Provider value={value}>{children}</ModelContext.Provider>;
 }

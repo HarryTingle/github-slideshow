@@ -47,6 +47,27 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-20 — An issued pack stops moving, and says what has moved around it
+**Reviewed:** `packages/engine/src/snapshot.ts`, `apps/web/lib/snapshots.ts`, the Issued packs panel and the frozen-model provider. Spec: `specs/0006-output-snapshots.md`.
+
+**The gap.** Until now the app had exactly one state: *now*. Every output was a live render of the current model. That is the right default for working and completely wrong for anything already sent — issue an SLT pack on Tuesday, flex a rate on Wednesday, and the pack the SLT is reading on Thursday says something different from the one they were sent, with nobody told.
+
+**What a snapshot stores, and why it stores both halves.** The complete engagement document *and* the headline figures as issued. The document is what makes a pack re-openable and diffable; the figures are what make it provable. Recomputing the frozen document must reproduce the stored figures, and `verifySnapshot` checks that every time a pack is rendered. If the two ever disagree, the calculation changed underneath an already-issued pack — a real event with commercial consequences — and the panel says so rather than quietly substituting today's answer. It would have been cheaper to store one or the other. Storing one would have meant either a record that cannot be explained or an explanation with no record.
+
+**Read-only is structural, not styled.** Opening a pack renders the same three Outputs views from a different model, supplied by a provider whose every mutator is a no-op. Nothing rendered inside can write to the working document even by accident, and the views needed no knowledge of snapshots to get there. The same wrapper makes the Excel export of an open pack export the frozen model — verified end to end: after moving the plan, the workbook from an open v1 still reports £249,259.72 and 259.62 days, its issued figures.
+
+**Two kinds of change, because they answer different questions.** Figures — revenue, cost, margin, effort, duration, cash exposure — say *what* moved. Structure — phases, workstreams, people, assignments, rates, scenarios, guardrails — says *why*. "Revenue is down £2,297" is a fact; "J. Moreau on Data Platform: 35.5 days → 32.7 days" is the argument, and the argument is what gets had in the room. Structural changes are written in the language of the plan, never the data model: no assignment ids appear on screen.
+
+**Two decisions on how movements are written.** Margins move in percentage points, never as a percentage of a percentage — 30% to 25% is −5.0pp. And a movement is only reported when it is visible at the precision we print: 30p on a figure shown to the pound, or 0.02pp on one shown to 0.1pp, is not a change to a reader, and listing "+0.0pp" is worse than saying nothing. This is the same rule that fixed the margin-tone bug in the pricing desk, now written down as `visibleAt(format)`.
+
+**A figure on one side only is not a movement from zero.** A T&M deal has no break-even overrun at all; a fixed-price one does. Switching between them makes the figure appear or disappear, and calling that a move from 0% would be a fiction. Tested in both directions.
+
+**Snapshots sit outside the model store on purpose.** Undo does not take a pack back, Reset does not clear one, and an edit cannot reach into one — all three verified in the browser rather than assumed. Undo after an edit correctly returns v1 to *Current*: the pack never moved, the model did, and the comparison is live in both directions.
+
+**Test-first fixes worth recording.** Three test failures were the tests being wrong about the app rather than the app being wrong: `setPersonName` is addressed by assignment, not by person, because that is how the grid works; and stretching a phase changes nothing about effort, because containment is growth-only — the phase grows around its contents, it does not drag them. A fourth was the engine being right and me being sloppy: eight weeks at 1.0 FTE is 35.5 effort days, not 40, once public holidays and the leave provision come off. The assertion now quotes 35.5, which is the number the product actually stands behind.
+
+**Known limit:** packs live in browser storage beside the model, so twelve is the ceiling and they do not travel between machines. Server-side storage arrives with persistence in M4, where approval attaches to the thing this milestone just created.
+
 ### 2026-08-19 — Excel export, and a formula that disagreed with the model
 **Reviewed:** `packages/engine/src/workbook.ts` and the export control on Outputs.
 
