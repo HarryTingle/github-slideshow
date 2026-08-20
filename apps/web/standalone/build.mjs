@@ -4,7 +4,7 @@
  * Same pages, same engine — only the router and the font loading differ from the
  * Next.js build. If a number differs between the two, this build is the bug.
  */
-import { build } from 'esbuild';
+import { build, transform } from 'esbuild';
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,7 +24,10 @@ await build({
   logLevel: 'info',
 });
 
-const css = await readFile(resolve(web, 'app/globals.css'), 'utf8');
+// Minified like the JS is. The source keeps its comments; the single-file build is a
+// build artefact, and the publish path has a size ceiling the comments were eating into.
+const source = await readFile(resolve(web, 'app/globals.css'), 'utf8');
+const { code: css } = await transform(source, { loader: 'css', minify: true });
 const js = await readFile(resolve(here, 'bundle.js'), 'utf8');
 
 // next/font supplies these in the Next build; here they come from Google Fonts.
