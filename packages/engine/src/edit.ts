@@ -608,3 +608,32 @@ export function setPersonAnnualLeave(
     ),
   };
 }
+
+/**
+ * Flex one person's leave for commercial purposes: days on top of, or off, what they
+ * are due over their weeks here. `null` returns them to the entitlement.
+ *
+ * A delta rather than an absolute, deliberately. The entitlement is derived from the
+ * real allowance and stays the truth; this is the assumption laid over it, and holding
+ * it separately is what lets the app show both numbers side by side.
+ *
+ * Bounded either side so a stray keystroke cannot silently rewrite the delivery plan.
+ */
+export function setPersonLeaveAdjustment(
+  engagement: Engagement,
+  personId: string,
+  days: number | null,
+): Engagement {
+  return {
+    ...engagement,
+    people: engagement.people.map((person) =>
+      person.id === personId
+        ? {
+            ...person,
+            leaveAdjustmentDays:
+              days == null || days === 0 ? undefined : Math.max(-60, Math.min(60, days)),
+          }
+        : person,
+    ),
+  };
+}

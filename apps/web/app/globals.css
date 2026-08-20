@@ -593,3 +593,12 @@ input.rate-input.overridden { border-color: var(--olive-500); background: var(--
 .change-kind.added { color: var(--status-good); }
 .change-kind.removed { color: var(--status-breach); }
 .change-kind.changed { color: var(--ink-300); }
+
+/* ---------- Leave desk ---------- */
+
+.leave-summary {
+  display: flex; align-items: center; gap: 26px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.leave-table { font-size: 13px; }
+.leave-table td, .leave-table th { padding: 7px 10px; }
+input.rate-input.adjust { width: 62px; text-align: center; }

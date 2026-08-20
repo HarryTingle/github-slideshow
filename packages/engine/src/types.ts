@@ -49,6 +49,19 @@ export interface Person {
   leave?: Record<WeekIndex, Days>;
   /** Overrides the engagement's annual leave allowance for this person. */
   annualLeaveDays?: Days;
+  /**
+   * Days added to, or taken off, what this person is *due* over their weeks here.
+   *
+   * The entitlement is derived and sourced — the annual allowance pro-rated to the
+   * weeks they are on the engagement. This is the commercial lever on top of it: the
+   * senior who never takes their leave, or the one with a fortnight booked in August.
+   * Held as a delta rather than an absolute so the entitlement stays the truth and the
+   * adjustment stays visibly an assumption.
+   *
+   * Negative values cannot un-book leave already in the diary — booked days are a fact,
+   * and the provision for unbooked leave simply floors at zero.
+   */
+  leaveAdjustmentDays?: Days;
 }
 
 export interface Calendar {

@@ -137,7 +137,10 @@ export function computePlan(
       booked += bookedThisWeek;
       if (bookedThisWeek === 0) weeksFree += 1;
     }
-    provisionByHolder.set(holder, leaveProvision(allowance, weeks.size, booked, weeksFree));
+    provisionByHolder.set(
+      holder,
+      leaveProvision(allowance, weeks.size, booked, weeksFree, person?.leaveAdjustmentDays ?? 0),
+    );
   }
 
   const lines: EffortLine[] = [];

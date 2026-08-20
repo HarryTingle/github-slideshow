@@ -43,10 +43,25 @@ export function leaveProvision(
   weeksOnEngagement: number,
   bookedDaysInThoseWeeks: number,
   weeksWithNoBookedLeave: number,
+  /** Days added to or taken off what this person is due — see `Person.leaveAdjustmentDays`. */
+  adjustmentDays = 0,
 ): Days {
-  if (annualLeaveDays <= 0 || weeksOnEngagement <= 0 || weeksWithNoBookedLeave <= 0) return 0;
-  const proRata = annualLeaveDays * (weeksOnEngagement / WEEKS_PER_YEAR);
-  return Math.max(0, proRata - bookedDaysInThoseWeeks) / weeksWithNoBookedLeave;
+  if (weeksOnEngagement <= 0 || weeksWithNoBookedLeave <= 0) return 0;
+  const expected = leaveEntitlement(annualLeaveDays, weeksOnEngagement) + adjustmentDays;
+  if (expected <= 0) return 0;
+  return Math.max(0, expected - bookedDaysInThoseWeeks) / weeksWithNoBookedLeave;
+}
+
+/**
+ * What somebody is due over the weeks they are on this engagement.
+ *
+ * The annual allowance pro-rated by weeks worked. This is the sourced figure — 23 days
+ * a year, per `context/domain-model.md` §3 — and the number the commercial view shows
+ * as "should take" before any adjustment.
+ */
+export function leaveEntitlement(annualLeaveDays: Days, weeksOnEngagement: number): Days {
+  if (annualLeaveDays <= 0 || weeksOnEngagement <= 0) return 0;
+  return annualLeaveDays * (weeksOnEngagement / WEEKS_PER_YEAR);
 }
 
 /** Linear ramp to full productivity over `rampWeeks`. 1 when no ramp is set. */

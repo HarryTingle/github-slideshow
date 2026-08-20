@@ -2,6 +2,7 @@
 
 import { formatMoney, formatPct, type Engagement } from '@scope/engine';
 import { GuardrailRow, MarginTone } from '@/components/bits';
+import { LeaveDesk } from '@/components/LeaveDesk';
 import { PricingDesk } from '@/components/PricingDesk';
 import { ScenarioEditor } from '@/components/ScenarioEditor';
 import { scenarioColour, useModel } from '@/lib/store';
@@ -65,6 +66,8 @@ export default function CommercialsPage() {
       </div>
 
       <PricingDesk />
+
+      <LeaveDesk />
 
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="card-head">

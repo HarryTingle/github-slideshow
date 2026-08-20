@@ -23,9 +23,9 @@ Establish the operating system for the work and extract the real domain model fr
 - [x] Workspace scaffold: `CLAUDE.md`, `ROADMAP.md`, `REVIEW.md`, `/context`, `/customers`, `/specs`, `/demos`, `/routines`
 - [ ] Ingest existing Excel delivery & commercial models into `/context/inputs` → run `routines/model-intake.md`
 - [x] Ingest rate card and role/seniority taxonomy → grade ladder, capabilities, charge and cost rates, annual leave, all in `context/domain-model.md` §3 and asserted by test
-- [ ] Ingest brand guidelines and proposal templates → constrains output design in M3
+- [ ] Ingest brand guidelines and proposal templates → constrains output design in M3. **Harry has the file** (`reference_kubrick_brand.md`); it is on his machine and this session cannot reach it — needs pasting in or committing to `context/inputs/`.
 - [x] Confirm stack and architecture decision (`context/decisions/0002-stack-and-architecture.md`) — accepted and built as described
-- [ ] Pick the reference engagement: one real, recently-run engagement whose model the app must reproduce exactly
+- [ ] Pick the reference engagement: one real, recently-run engagement whose model the app must reproduce exactly — **in progress**, Harry testing a candidate
 
 **Done when:** the domain model in `/context` is derived from real artefacts rather than first principles, and one reference engagement is chosen as the golden test case.
 
@@ -41,7 +41,7 @@ A pure, tested calculation core. No UI. The unit of proof is: *the engine reprod
 - [ ] Dependencies between workstreams — deliberately deferred; nothing has needed them yet
 - [x] Resource model: allocation of people/roles to workstreams over time, at fractional FTE
 - [x] Capacity truth: holiday (annual allowance and booked leave), ramp-up, partial availability
-- [ ] Utilisation as a pricing assumption — **blocked on Q3**; the engine deliberately has no utilisation input
+- [ ] Utilisation as a pricing assumption — **deferred by Harry, 2026-08-20**; the engine deliberately has no utilisation input rather than an invented one
 - [ ] Shared people across engagements — **blocked on Q20**; single-engagement only today
 - [x] Cost model: cost of delivery from grade cost rates, including non-billable overhead
 - [x] Revenue model: T&M as the base case
@@ -65,6 +65,7 @@ The thing that wins bids. Same delivery plan, many commercial shapes, compared s
 - [x] Sensitivity: plan slip and additional discount, applied across every scenario at once
 - [x] Risk & contingency: contingency on cost, downside/expected/upside cases, break-even overrun, cash exposure
 - [x] Guardrails: thresholds with a plain-English explanation and a named approver
+- [x] Leave as a commercial lever — per-person entitlement, adjustment and margin effect, structure-aware. **Magnitude unproven until Q21** (is a cost rate built on billable days or working days?)
 - [ ] Blended-rate break-even mix
 - [ ] Discount ladders (volume, term, strategic)
 

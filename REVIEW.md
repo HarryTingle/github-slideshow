@@ -47,6 +47,25 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-20 — Leave becomes a commercial lever, and stops being a warning colour
+**Reviewed:** `packages/engine/src/leave.ts`, the leave desk on Commercials, and the tint removed from the delivery grid. Spec: `specs/0007-leave-as-a-commercial-lever.md`.
+
+**Q19 answered, and it moved the feature.** Leave *is* deductible. Harry's follow-on was the more interesting half: he needs to flex it per person, because on fixed-price work more leave means more margin — and the place to do that is Commercials, not the delivery plan. He was right, and the red tint on short weeks in the grid is gone. It was flagging a plan that had no problem, on a different page from the number it moved.
+
+**The lever is structure-aware, and the sign flips.** Under a fixed price, revenue does not move, so cost avoided is margin. Under T&M the day is not billed either — and because a charge rate exceeds a cost rate, an unbilled day loses more revenue than it saves. On the seeded engagement the whole team's leave is worth **+£20,425 under fixed price and −£8,148 under T&M**. Ten days added to one Consultant moves fixed-price margin 22.0% → 23.5%, and T&M margin 20.7% → 20.6%. Reporting a single number for both would have been the most expensive kind of wrong.
+
+**Days lost sits next to the money, deliberately.** 27.3 delivery days come out of the seeded plan for leave. Under a fixed price that reads as £20,425 of margin, and it is only margin if the work still fits in the days that remain. The card says that in as many words, because the alternative is a bid that wins on a saving it cannot deliver.
+
+**Derived, not estimated.** Days lost, cost saved and revenue forgone come from computing a second plan with leave switched off and taking the difference. Public holidays stay in it — they are not leave and nobody chooses them. There is no separate formula for what leave costs, which means there is nothing to drift out of step with the plan.
+
+**Entitlement stays the truth; the adjustment stays an assumption.** The lever is a delta against what somebody is due, not an absolute. That keeps the sourced 23-day figure visible next to the invented one, and it means the app can highlight a variance — which immediately caught that A. Whitfield carries 10 booked days against a 4.9-day entitlement, something nothing on screen had ever said.
+
+**A limit worth stating.** A negative adjustment cannot un-book leave already in the diary. The provision floors at zero and booked days stand, because booked leave is a fact rather than a forecast — you remove it where you booked it.
+
+**The assumption everything rests on, now Q21.** All of this assumes a cost rate is annual cost ÷ *billable* days. If it is ÷ working days, leave is already unrecovered cost inside the rate, deducting absent days again double-counts it, and margin does not rise at all. The direction of the lever is right either way; its magnitude is unproven until that is answered. Raised with Harry rather than assumed, and tagged in the module, the spec and the roadmap.
+
+**Also this session:** Q3 deferred at Harry's request — utilisation stays out of the engine rather than being carried as an invented constant. Q1 in progress: Harry is testing a candidate reference engagement.
+
 ### 2026-08-20 — An issued pack stops moving, and says what has moved around it
 **Reviewed:** `packages/engine/src/snapshot.ts`, `apps/web/lib/snapshots.ts`, the Issued packs panel and the frozen-model provider. Spec: `specs/0006-output-snapshots.md`.
 
@@ -246,7 +265,6 @@ Live list. Move to *Resolved* with the answer and the date — do not delete.
 | # | Question | Why it blocks or bends the work | Owner | Raised |
 |---|---|---|---|---|
 | Q1 | Which real engagement becomes the reference model for the golden test? | Defines the true scope of M1 and the shape of the domain model. | Harry | 2026-08-18 |
-| Q3 | What is the real utilisation assumption used in pricing today — and is it applied to cost, to capacity, or to both? | This is the most common source of error in bespoke Excel models. Getting it wrong makes every margin number wrong. | Harry | 2026-08-18 |
 | Q4 | How are outcome / ROI-share deals actually structured today? Percentage of measured benefit, gain-share against a baseline, or bonus on milestone? | M2 cannot model what we cannot define. Also the least standardised structure in the market. | Harry | 2026-08-18 |
 | Q5 | Who signs off a deal, against what thresholds? | Determines the SLT pack contents and the guardrail logic. | Harry | 2026-08-18 |
 | Q6 | Do resourcing teams work from named people or from role placeholders at bid stage? | Changes whether the resource model is people-first or role-first. | Harry | 2026-08-18 |
@@ -258,8 +276,8 @@ Live list. Move to *Resolved* with the answer and the date — do not delete.
 | Q12 | Is a stated resourcing capacity constraint (currently hard-coded at 5 FTE on the demand chart) a real concept, and where does the number come from? | It is the one figure in the UI not sourced from the model. | Harry | 2026-08-19 |
 | Q13 | Should moving a workstream move the team staffed on it, or hold them still? | Currently it moves them, on the reasoning that a workstream that slips takes its team with it. The opposite is defensible when people are committed to dates rather than to work. | Harry | 2026-08-19 |
 | Q14 | Does a person's level ever change mid-engagement (promotion, or booked at a different grade per workstream)? | Level is currently held per assignment, so the same person can sit at two levels. That may be a feature or a trap. | Harry | 2026-08-19 |
-| Q19 | In the resourcing extract, Billable Days 253 reconciles to 261 weekdays less 8 public holidays — so the 23-day leave allowance is **not** deducted. Is it applied downstream, or not at all? | If not, planned capacity is overstated by ~9% and every fixed-price bid on it is under-resourced by the same margin. The engine currently deducts leave, so it and the spreadsheet disagree by design until this is answered. | Harry | 2026-08-19 |
 | Q20 | Is a person ever shared across concurrent engagements at bid stage, and if so how is their availability split? | Determines whether cross-engagement capacity belongs in the engine at all, or stays a resourcing-system concern. Currently single-engagement only. | Harry | 2026-08-20 |
+| Q21 | Is a grade cost rate an annual cost divided by **billable** days, or by **working** days? | Decides whether leave can raise margin at all. If the rate is built on working days, leave is already unrecovered cost inside it and deducting absent days again double-counts — margin would not rise. Every figure in the new leave desk depends on this. Follows directly from Q19. | Harry | 2026-08-20 |
 
 ### Resolved
 
@@ -271,6 +289,8 @@ Live list. Move to *Resolved* with the answer and the date — do not delete.
 | Q2 | Are cost rates held per grade, per person, or both? | Per grade. The engine keeps a per-person override for people paid off-band. | 2026-08-19 |
 | Q15 | What are the real cost rates by grade? | Received. Associate £342 to Director £1,988. | 2026-08-19 |
 | Q6a | Are capability and grade independent axes, or one ladder? | Independent. Two separate lists supplied, 8 grades × 6 capabilities. | 2026-08-19 |
+| Q19 | Is the 23-day leave allowance deducted from the 253 billable days? | **Yes, it is deductible.** The engine's treatment stands. Raised a follow-on as Q21: whether the *cost rate* was built on billable or working days, which decides whether deducting leave can raise margin or double-counts it. | 2026-08-20 |
+| Q3 | What is the real utilisation assumption used in pricing? | **Deferred by Harry** — leave utilisation out for now. The engine stays deliberately free of a utilisation input rather than carrying an invented one. Reopen before any bid is priced on it. | 2026-08-20 |
 
 ---
 

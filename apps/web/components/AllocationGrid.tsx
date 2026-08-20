@@ -6,6 +6,7 @@ import {
   addWorkstream,
   allocationToDays,
   contentsOf,
+  formatDays,
   formatMoney,
   headerSpans,
   quarterLabel,
@@ -483,7 +484,7 @@ function LeaveCell({
   const booked = person?.leave?.[week];
   return (
     <td className={`cell${sprintEdge ? ' sprint-edge' : ''}`}>
-      <div className={`cellbox${booked ? ' reduced' : ''}`}>
+      <div className="cellbox">
         {person ? (
           <input
             className={`cellinput${booked ? ' override' : ' outside'}`}
@@ -544,22 +545,23 @@ function Cell({
 }) {
   const inRange = week >= assignment.startWeek && week <= assignment.endWeek;
   const override = assignment.allocationByWeek?.[week];
-  // Only flag weeks short for a *specific* reason — a public holiday or booked leave.
-  // The annual-leave provision shaves every week by the same sliver, so counting it here
-  // would paint the whole grid and the flag would stop meaning anything.
-  const reduced = line != null && line.availableDays + line.leaveProvision < workingDays - 1e-9;
+  // A short week is no longer tinted. Leave is a commercial question — how much the team
+  // takes and what that is worth is decided on the Commercials page, where the margin it
+  // moves is on the same screen. Colouring it here made the plan look like it had a
+  // problem when the plan was fine. The arithmetic is still on hover.
+  const short = line != null && line.availableDays + line.leaveProvision < workingDays - 1e-9;
   const allocation = inRange ? (override ?? assignment.allocation) : override;
   const value = allocation == null ? '' : tidy(allocationToDays(allocation, workingDays));
 
   return (
     <td className={`cell${sprintEdge ? ' sprint-edge' : ''}`}>
       <div
-        className={`cellbox${reduced ? ' reduced' : ''}`}
+        className="cellbox"
         onMouseEnter={() => line && onTrace(line)}
         onMouseLeave={() => onTrace(null)}
         title={
-          reduced
-            ? `Only ${line?.availableDays} days available this week — holiday or leave`
+          short
+            ? `Only ${formatDays(line?.availableDays)} days available this week — holiday or leave`
             : undefined
         }
       >
