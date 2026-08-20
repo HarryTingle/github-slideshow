@@ -1,6 +1,6 @@
 import { cashCurve, computeScenario, maxCashExposure, sliceOf, type ScenarioResult } from './commercial';
 import { billedRatesFor, burnCurve, computePlan, gradeMix, type ComputedPlan } from './compute';
-import { ratio } from './money';
+import { ratio, toMoney } from './money';
 import type { Engagement, Guardrail, Money, WeekIndex } from './types';
 
 /** The numbers a Head of Commercial actually looks at. `context/domain-model.md` §8. */
@@ -201,29 +201,70 @@ export interface Sensitivity {
 
 export function applySensitivity(engagement: Engagement, sensitivity: Sensitivity): Engagement {
   const { slipWeeks, extraDiscountPct } = sensitivity;
-  if (slipWeeks === 0 && extraDiscountPct === 0) return engagement;
+  if (slipWeeks <= 0 && extraDiscountPct === 0) return engagement;
+
+  return discounted(slipped(engagement, Math.max(0, Math.round(slipWeeks))), extraDiscountPct);
+}
+
+/**
+ * A deeper discount on what we actually bill.
+ *
+ * Applied to each scenario's billed rates — the client card and any per-grade pricing
+ * laid over it — and written back as overrides, so the concession lands exactly once on
+ * the rates that produce revenue.
+ *
+ * The practice's **standard card is deliberately untouched**. It is the reference point
+ * the deal is measured against, not a thing a sensitivity gets to move. Discounting it
+ * alongside everything else made `discountVsStandardPct` report a *negative* discount
+ * on a fixed-price deal — the app claiming we were charging above our card at the moment
+ * we cut the price by a tenth.
+ */
+function discounted(engagement: Engagement, extraDiscountPct: number): Engagement {
+  if (extraDiscountPct === 0) return engagement;
+  const cut = (rate: Money) => Math.max(0, toMoney(rate * (1 - extraDiscountPct)));
 
   return {
     ...engagement,
-    weeks: engagement.weeks + Math.max(0, slipWeeks),
-    grades: engagement.grades.map((grade) => ({
-      ...grade,
-      chargeRate: Math.round(grade.chargeRate * (1 - extraDiscountPct)),
-    })),
-    workstreams: engagement.workstreams.map((workstream) => ({
-      ...workstream,
-      endWeek: workstream.endWeek + slipWeeks,
-    })),
-    phases: engagement.phases.map((phase) => ({ ...phase, endWeek: phase.endWeek + slipWeeks })),
-    assignments: engagement.assignments.map((assignment) => ({
-      ...assignment,
-      endWeek: assignment.endWeek + slipWeeks,
-    })),
-    rateCards: engagement.rateCards.map((card) => ({
-      ...card,
-      rates: Object.fromEntries(
-        Object.entries(card.rates).map(([id, rate]) => [id, Math.round(rate * (1 - extraDiscountPct))]),
-      ),
-    })),
+    scenarios: engagement.scenarios.map((scenario) => {
+      // Start from what this scenario would bill today, so a scenario already carrying
+      // per-grade overrides is discounted too. It previously was not: any deal touched
+      // by the pricing desk ignored this slider completely, and the stress test on the
+      // most carefully priced scenarios was the one doing nothing.
+      const billed = billedRatesFor(engagement, scenario);
+      const rates: Record<string, Money> = {};
+      for (const grade of engagement.grades) {
+        rates[grade.id] = cut(billed[grade.id] ?? grade.chargeRate);
+      }
+      return { ...scenario, rateOverrides: rates };
+    }),
+  };
+}
+
+/**
+ * The plan overruns.
+ *
+ * A slip means the work takes longer, not that every phase of it grows. Only the
+ * assignments still running at the original end date carry on — the tail team held for
+ * longer, which is what an overrun actually costs. Phases and workstreams live at the
+ * end stretch with them.
+ *
+ * The previous version extended the end of *every* phase, workstream and assignment,
+ * which resurrected Discovery for four weeks after it had finished and put the entire
+ * team back on at peak. On the seeded plan a four-week slip added 190 effort days to a
+ * 260-day engagement and *improved* T&M margin — a stress test that made the deal look
+ * better the worse it went.
+ */
+function slipped(engagement: Engagement, slipWeeks: number): Engagement {
+  if (slipWeeks === 0) return engagement;
+  const lastWeek = engagement.weeks;
+  const stretch = <T extends { startWeek: WeekIndex; endWeek: WeekIndex }>(item: T): T =>
+    item.endWeek >= lastWeek ? { ...item, endWeek: item.endWeek + slipWeeks } : item;
+
+  return {
+    ...engagement,
+    weeks: engagement.weeks + slipWeeks,
+    phases: engagement.phases.map(stretch),
+    workstreams: engagement.workstreams.map(stretch),
+    assignments: engagement.assignments.map(stretch),
   };
 }

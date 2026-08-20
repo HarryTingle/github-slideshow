@@ -409,14 +409,18 @@ describe('commercial structures', () => {
     expect(result.capHeadroomPct).toBeCloseTo(0.111, 3);
   });
 
-  it('flags milestone payments that do not sum to the contract value', () => {
+  it('flags milestone payments that do not sum to the contract value, and bills the balance on completion', () => {
     const result = computeStructure(
       slice,
       { type: 'milestone', contractValue: pounds(180000), contingencyPct: 0, payments: [{ milestoneId: 'm1', value: pounds(90000) }] },
       10,
       [{ id: 'm1', name: 'Phase 1', week: 5 }],
     );
-    expect(result.notes.some((note) => note.includes('must agree before sign-off'))).toBe(true);
+    expect(result.notes.some((note) => note.includes('£90,000') && note.includes('£180,000'))).toBe(true);
+    // The balance lands on completion rather than disappearing from the weekly curve.
+    expect(result.revenueByWeek[4]).toBe(pounds(90000));
+    expect(result.revenueByWeek[9]).toBe(pounds(90000));
+    expect(result.revenueByWeek.reduce((total, value) => total + value, 0)).toBe(result.revenue);
   });
 });
 

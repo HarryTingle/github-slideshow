@@ -47,6 +47,25 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-20 — An adversarial audit of the engine, and three defects in the stress test
+**Reviewed:** `applySensitivity`, the milestone structure, and the weekly revenue curve of every commercial shape. Prompted by Harry's priority: modelling accuracy first.
+
+With no reference engagement yet to test against, the next best thing is to attack the engine's own claims. Four probes — does the stress test move what it says it moves, does every total equal the sum of its parts, does the cash lag do anything, does an empty model explode. Three defects, all in the sensitivity model, all silent.
+
+**1. The discount slider did nothing to any scenario that had been priced.** Billed rates resolve as scenario overrides over client card over standard, and overrides win. The sensitivity discounted only the card — so the moment a deal was touched by the pricing desk, which writes overrides for every grade, the extra-discount slider stopped working on it entirely. Pull it to 10% and revenue did not move by a penny. The stress test was inert on exactly the scenarios that had been thought about hardest. It now discounts each scenario's *billed* rates and writes them back, so the concession lands once, on what actually produces revenue.
+
+**2. Discounting also moved our own standard card, so the discount metric went negative.** `discountVsStandardPct` measures how far below our card we are pricing. Cutting the card alongside the billed rates made a fixed-price deal report **−5.4% discount** under a 10% concession — the app claiming we were charging *above* our own rates at the moment we cut the price by a tenth. The standard card is a reference point, not something a sensitivity gets to move. It is now left alone, and a fixed price correctly shows an unchanged discount because discounting rates does nothing to a fixed price.
+
+**3. The slip made the deal look better the worse it went.** The old model extended the end of *every* phase, workstream and assignment. A four-week slip therefore restarted Discovery — finished in week 3 — for four more weeks, and put the entire team back on at peak. On the seeded plan it added **190 effort days to a 260-day engagement** and lifted T&M margin from 20.7% to 21.9%. A stress test that rewards overrun is worse than no stress test. A slip now extends only the work still running at the original end date: the tail team held longer, which is what an overrun costs. The same four weeks now add 40 days, and fixed-price margin falls 22.0% → 10.4%, which is the number that should frighten somebody.
+
+**4. Found in passing: milestone revenue that did not add up.** Where the payment schedule totalled less than the contract value, `revenue` reported the whole contract while `revenueByWeek` carried only the scheduled payments. On a £250k contract with £100k scheduled, the SLT pack's cumulative revenue chart would have ended £150,000 below the recommendation printed above it. The balance now falls due on completion, so the curve sums to the headline while the schedule is still being negotiated — and the note that flags the gap now prints money as money rather than as a bare number of pence divided by a hundred.
+
+**The invariant that would have caught it, now a test.** Every structure's weekly revenue curve must sum to the revenue it reports — nine structures plus a hybrid, asserted directly. Cash exposure, the payment-lag curve and the SLT chart all derive from that curve, so a structure that disagrees with its own headline puts a figure in front of an approver that the chart beside it contradicts.
+
+**What the audit cleared.** Sum of rounded lines equals the reported total for cost and revenue, and the weekly cost map agrees with both. The payment lag genuinely delays cash — worst position £2,893 at zero weeks, −£58,306 at four, −£172,689 at twelve — and every curve ends at the same final position, so nothing is lost or invented in the lag. The outcome-share cap binds at £295,000. A capped T&M cap binds and its weekly curve still sums. An engagement with no people costs its non-billable overhead, reports a null blended rate rather than a division by zero, and does not throw.
+
+**Left as a gap, not a defect:** `capHeadroomPct` is computed and never displayed. A capped T&M deal whose cap binds shows no indication anywhere in the UI that revenue has been clipped. Logged on the roadmap.
+
 ### 2026-08-20 — Leave becomes a commercial lever, and stops being a warning colour
 **Reviewed:** `packages/engine/src/leave.ts`, the leave desk on Commercials, and the tint removed from the delivery grid. Spec: `specs/0007-leave-as-a-commercial-lever.md`.
 

@@ -62,10 +62,11 @@ The thing that wins bids. Same delivery plan, many commercial shapes, compared s
 - [x] Hybrid deals — a different structure per phase, summed
 - [x] Rate strategy: per-grade rates, client-specific rate cards, discount measured against standard
 - [x] Scenario engine: fork a scenario, change the structure, compare on one screen
-- [x] Sensitivity: plan slip and additional discount, applied across every scenario at once
+- [x] Sensitivity: plan slip and additional discount, applied across every scenario at once — rebuilt 2026-08-20 after an audit found the slider inert on repriced scenarios and the slip *improving* margin
 - [x] Risk & contingency: contingency on cost, downside/expected/upside cases, break-even overrun, cash exposure
 - [x] Guardrails: thresholds with a plain-English explanation and a named approver
 - [x] Leave as a commercial lever — per-person entitlement, adjustment and margin effect, structure-aware. **Magnitude unproven until Q21** (is a cost rate built on billable days or working days?)
+- [ ] Show cap status on a capped T&M deal — `capHeadroomPct` is computed and never displayed, so a binding cap clips revenue silently
 - [ ] Blended-rate break-even mix
 - [ ] Discount ladders (volume, term, strategic)
 

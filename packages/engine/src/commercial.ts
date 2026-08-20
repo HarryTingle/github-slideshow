@@ -1,5 +1,5 @@
 import type { ComputedPlan, EffortLine } from './compute';
-import { applyPct, ratio, toMoney } from './money';
+import { applyPct, formatMoney, ratio, toMoney } from './money';
 import type {
   CommercialStructure,
   Engagement,
@@ -198,9 +198,19 @@ export function computeStructure(
         revenueByWeek[i] = (revenueByWeek[i] ?? 0) + payment.value;
         allocated += payment.value;
       }
-      if (allocated !== revenue) {
+      // Contract value not tied to a named milestone falls due on completion. Without
+      // this the weekly curve sums to less than the headline — the SLT pack's revenue
+      // chart would end at the scheduled payments while the recommendation quoted the
+      // whole contract. Every cash figure derives from this curve, so it has to add up
+      // even while the schedule is still being negotiated.
+      const unscheduled = revenue - allocated;
+      if (unscheduled !== 0) {
+        const last = Math.max(0, weeks - 1);
+        revenueByWeek[last] = (revenueByWeek[last] ?? 0) + unscheduled;
         notes.push(
-          `Milestone payments total ${allocated / 100} against a contract value of ${revenue / 100}. They must agree before sign-off.`,
+          unscheduled > 0
+            ? `Milestone payments total ${formatMoney(allocated)} against a contract value of ${formatMoney(revenue)}. The remaining ${formatMoney(unscheduled)} is billed on completion until the schedule agrees.`
+            : `Milestone payments total ${formatMoney(allocated)}, ${formatMoney(-unscheduled)} more than the contract value of ${formatMoney(revenue)}. They must agree before sign-off.`,
         );
       }
       notes.push('Cashflow is lumpy — check maximum cash exposure, not only margin.');
