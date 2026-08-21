@@ -124,12 +124,13 @@ export function setAllocation(
     const overrides: Record<number, number> = { ...(assignment.allocationByWeek ?? {}) };
 
     if (value == null) {
-      delete overrides[target];
       const single = assignment.startWeek === assignment.endWeek;
       const atStart = target === assignment.startWeek;
       const atEnd = target === assignment.endWeek;
 
       if (!single && (atStart || atEnd)) {
+        // At an edge, clearing shortens the row and the week goes with it.
+        delete overrides[target];
         let startWeek = atStart ? assignment.startWeek + 1 : assignment.startWeek;
         let endWeek = atEnd ? assignment.endWeek - 1 : assignment.endWeek;
         if (atStart) while (startWeek < endWeek && overrides[startWeek] === 0) startWeek += 1;
@@ -141,6 +142,12 @@ export function setAllocation(
           allocationByWeek: pruneOverrides(overrides, startWeek, endWeek),
         };
       }
+
+      // Anywhere else, clearing means nobody works that week — not that the week goes
+      // back to whatever the row's default happened to be. Deleting the override did
+      // the latter, so emptying a box in the middle of a booking put the number
+      // straight back and there was no way to zero a single week at all.
+      overrides[target] = 0;
       return { ...assignment, allocationByWeek: overrides };
     }
 

@@ -622,8 +622,10 @@ export function AllocationGrid() {
         <span>
           {mode === 'allocation' ? (
             <>
-              Boxes are days a week — {stressed.calendar.workingDaysPerWeek} is full time. Typing
-              past a row&apos;s dates extends it; clearing the box at either end shortens it.
+              Boxes are days a week — {stressed.calendar.workingDaysPerWeek} is full time, and{' '}
+              {stressed.calendar.workingDaysPerWeek * 2} the ceiling, since a row can carry two
+              people. Typing past a row&apos;s dates extends it; clearing the box at either end
+              shortens it, and anywhere else empties that week.
             </>
           ) : (
             <>
@@ -797,6 +799,20 @@ function Cell({
   onKeyDown: (row: number, week: number, event: React.KeyboardEvent<HTMLInputElement>) => void;
   onChange: (value: number | null) => void;
 }) {
+  /**
+   * What the box shows while it is being typed into.
+   *
+   * The box is controlled from the model, and the model only understands numbers — so
+   * every keystroke used to be round-tripped through `parseFloat`. Typing "2.5" went
+   * "2" → "2." → parseFloat gives 2 → the model stays 2 → the re-render wipes the "."
+   * → the next keystroke lands as "25", which the engine clamps to its two-FTE ceiling
+   * and shows as **10**. Decimals were impossible to type and the failure looked random.
+   *
+   * Holding the in-progress text locally lets a half-finished number exist for as long
+   * as it takes to finish it. The model still only ever receives numbers.
+   */
+  const [draft, setDraft] = useState<string | null>(null);
+
   const inRange = week >= assignment.startWeek && week <= assignment.endWeek;
   const override = assignment.allocationByWeek?.[week];
   // A short week is no longer tinted. Leave is a commercial question — how much the team
@@ -805,7 +821,10 @@ function Cell({
   // problem when the plan was fine. The arithmetic is still on hover.
   const short = line != null && line.availableDays + line.leaveProvision < workingDays - 1e-9;
   const allocation = inRange ? (override ?? assignment.allocation) : override;
-  const value = allocation == null ? '' : tidy(allocationToDays(allocation, workingDays));
+  // A zero is nobody working that week, so it reads as an empty box rather than a "0"
+  // the eye has to interpret. Clearing a cell now leaves it looking cleared.
+  const days = allocation == null ? null : allocationToDays(allocation, workingDays);
+  const value = draft ?? (days == null || days === 0 ? '' : tidy(days));
 
   return (
     <td
@@ -847,12 +866,27 @@ function Cell({
           placeholder="·"
           value={value}
           onChange={(event) => {
-            const raw = event.target.value.trim();
-            if (raw === '') return onChange(null);
-            const parsed = Number.parseFloat(raw);
-            if (Number.isNaN(parsed)) return;
-            onChange(parsed);
+            const raw = event.target.value;
+            const trimmed = raw.trim();
+            if (trimmed === '') {
+              setDraft(raw);
+              return onChange(null);
+            }
+            const parsed = Number.parseFloat(trimmed);
+            // "2." and "-" are on the way to a number, not numbers. Keep them on screen
+            // and leave the model where it is until there is something to commit.
+            if (Number.isNaN(parsed)) {
+              setDraft(raw);
+              return;
+            }
+            // The engine caps a row at two people, so a bigger number cannot be stored.
+            // Show that at the keystroke that crosses the line rather than letting the
+            // box read 55 until it is blurred and silently becomes 10.
+            const capped = Math.max(0, Math.min(workingDays * 2, parsed));
+            setDraft(capped === parsed ? raw : tidy(capped));
+            onChange(capped);
           }}
+          onBlur={() => setDraft(null)}
         />
       </div>
     </td>

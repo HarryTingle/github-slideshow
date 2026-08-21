@@ -77,7 +77,9 @@ Peak-to-average ratio flags a staffing profile the resourcing team will struggle
 - [x] Phases and workstreams can be added and deleted in the grid. Deleting cascades to everything staffed beneath, and asks first, naming what would go — there is no undo
 - [x] **Every** cell takes a number, including cells outside a row's current dates; typing outside the range extends it, and the weeks stepped over are set to zero so no effort appears uninvited
 - [x] The cells are the *only* date control on a role row: clearing the box at either end shortens the row, collapsing past any zeros left behind by an earlier extension, so extending and undoing is an exact round trip
-- [x] Clearing a box inside a row returns that week to the row's default rather than shortening it — a week in the middle of a booking is still booked
+- [x] Clearing a box inside a row **empties that week** rather than shortening the row or restoring the row's default. The original rule was that clearing must not split a booking in two; setting the week to zero does not split anything, and restoring the default meant a single week could never be zeroed. A zero renders as an empty box
+- [x] Fractional days can be typed. The box holds its in-progress text, so `2.` can exist on the way to `2.5` without the model rounding it away mid-keystroke
+- [x] The two-FTE ceiling applies at the keystroke that crosses it, so a box never shows a number that will not be stored
 - [x] **A span is filled in one action.** The unit of work is "three days a week, weeks four to eleven", not one cell. Drag across cells, or click one and shift-click another, then type: every selected cell takes the value. Selection spans rows as well as weeks, so a whole block of the plan can be set at once
 - [x] A fill is **one edit and one undo step**, labelled by how many cells it covered
 - [x] A filled range is byte-identical to typing the same cells one at a time, extension and trimming rules included — asserted by test rather than by inspection, because a second implementation of the containment rules is how a plan starts disagreeing with itself

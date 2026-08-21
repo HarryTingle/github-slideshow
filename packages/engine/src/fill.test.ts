@@ -98,3 +98,30 @@ describe('filling a range', () => {
     expect(elapsed).toBeLessThan(2000);
   });
 });
+
+describe('the ceiling on a cell', () => {
+  it('caps a row at two people, and says so by the number it stores', () => {
+    // The cap is why a mistyped number came back as 10: two FTE at a five-day week.
+    // Documented here so the ceiling is a decision rather than a surprise.
+    const filled = fillAllocationDays(meridian, ['a5'], 5, 5, 55);
+    const row = rowOf(filled, 'a5');
+    expect(row.allocationByWeek![5]).toBe(2);
+    expect(allocationToDays(row.allocationByWeek![5]!, 5)).toBe(10);
+  });
+
+  it('keeps a fractional day exactly', () => {
+    const filled = fillAllocationDays(meridian, ['a5'], 5, 8, 2.5);
+    const row = rowOf(filled, 'a5');
+    for (let week = 5; week <= 8; week++) {
+      expect(allocationToDays(row.allocationByWeek![week]!, 5)).toBeCloseTo(2.5, 9);
+    }
+  });
+
+  it('clearing a span empties every week in it without shortening the row', () => {
+    const cleared = fillAllocationDays(meridian, ['a5'], 6, 9, null);
+    const row = rowOf(cleared, 'a5');
+    expect(row.startWeek).toBe(4);
+    expect(row.endWeek).toBe(11);
+    for (let week = 6; week <= 9; week++) expect(row.allocationByWeek![week]).toBe(0);
+  });
+});

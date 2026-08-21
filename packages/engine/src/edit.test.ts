@@ -142,14 +142,25 @@ describe('editing a cell outside the current range', () => {
     expect(assignment.endWeek).toBe(6);
   });
 
-  it('returns a week to its default when cleared in the middle of the row', () => {
+  it('empties a week when cleared in the middle of the row, without shortening it', () => {
+    // Changed deliberately: clearing used to delete the override, which handed the week
+    // back to the row's default — so emptying a box in the middle of a booking put the
+    // number straight back, and a single week could not be zeroed at all.
     const set = setAllocation(meridian, 'a5', 5, 0.25);
     const cleared = setAllocation(set, 'a5', 5, null);
     const assignment = cleared.assignments.find((a) => a.id === 'a5')!;
-    expect(assignment.allocationByWeek?.[5]).toBeUndefined();
+    expect(assignment.allocationByWeek?.[5]).toBe(0);
     expect(assignment.startWeek).toBe(4);
     expect(assignment.endWeek).toBe(11);
-    expect(effort(cleared)).toBeCloseTo(effort(), 6);
+    // The week now carries no effort, so the total falls by what that week held.
+    expect(effort(cleared)).toBeLessThan(effort());
+  });
+
+  it('still shortens the row when the cleared week is at either end', () => {
+    const fromEnd = setAllocation(meridian, 'a5', 11, null);
+    expect(fromEnd.assignments.find((a) => a.id === 'a5')!.endWeek).toBe(10);
+    const fromStart = setAllocation(meridian, 'a5', 4, null);
+    expect(fromStart.assignments.find((a) => a.id === 'a5')!.startWeek).toBe(5);
   });
 });
 
@@ -365,10 +376,10 @@ describe('cells in days a week', () => {
     expect(line.effortDays).toBeCloseTo(4, 9);
   });
 
-  it('clears a cell when given null', () => {
+  it('empties a cell when given null, rather than restoring the row default', () => {
     const set = setAllocationDays(meridian, 'a7', 6, 2);
     const cleared = setAllocationDays(set, 'a7', 6, null);
-    expect(cleared.assignments.find((a) => a.id === 'a7')!.allocationByWeek?.[6]).toBeUndefined();
+    expect(cleared.assignments.find((a) => a.id === 'a7')!.allocationByWeek?.[6]).toBe(0);
   });
 });
 

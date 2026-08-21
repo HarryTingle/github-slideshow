@@ -47,6 +47,25 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-20 — Two bugs in typing a number into a cell
+**Reviewed:** cell entry in the allocation grid, and `setAllocation`'s clear path. Reported by Harry: numbers "sometimes don't clear but default to a random number or turn into 10".
+
+Both halves of that description were exactly right, and they were two separate faults.
+
+**"Turns into 10": decimals were impossible to type.** The box is controlled from the model and the model only understands numbers, so every keystroke was round-tripped through `parseFloat`. Typing `2.5` went `2` → `2.` → parseFloat returns 2 → the model stayed at 2 → the re-render wiped the trailing dot → the next keystroke landed as `25` → the engine clamps a row at two FTE, which on a five-day week is **10 days**. Every step was working as written and the result was nonsense.
+
+The box now holds its in-progress text locally, so a half-finished number can exist for as long as it takes to finish it, and the model still only ever receives numbers. `2.5` and `0.5` work, in single cells and in filled spans.
+
+**The ceiling was also invisible.** A genuine mistype of `55` used to show 55 until the box was blurred and then silently become 10. The cap now bites at the keystroke that crosses it, so the box never shows a number that will not be stored. The legend says where the ceiling is and why — a row can carry two people.
+
+**"Doesn't clear": clearing a middle cell put the number straight back.** Clearing deleted the per-week override, which handed the week back to the row's *default* allocation. So emptying a box in the middle of a booking made the old number reappear, and a single week could not be zeroed at all. Clearing now means what it says: nobody works that week. The row keeps its shape — the original reason for the behaviour was that clearing must not split a booking in two, and setting the week to zero does not split anything.
+
+A zero renders as an empty box rather than a `0`, so a cleared cell looks cleared. Clearing at either end still shortens the row, which is unchanged.
+
+**Two tests asserted the old behaviour and were rewritten rather than worked around.** `returns a week to its default when cleared in the middle of the row` was encoding the bug as a feature. Both now state the new rule and why it changed.
+
+**A note on the test I wrote to check the fix.** It reported that filling a span with a decimal only touched one cell — a regression I nearly went hunting for. The test was clicking the anchor cell again after shift-clicking, which correctly starts a fresh selection. The app was right; the test was describing a gesture no user would make.
+
 ### 2026-08-20 — Filling a span, instead of a cell at a time
 **Reviewed:** `fillAllocationDays` in the engine, and range selection in the allocation grid.
 
