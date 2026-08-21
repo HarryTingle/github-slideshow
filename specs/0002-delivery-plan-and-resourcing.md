@@ -78,6 +78,10 @@ Peak-to-average ratio flags a staffing profile the resourcing team will struggle
 - [x] **Every** cell takes a number, including cells outside a row's current dates; typing outside the range extends it, and the weeks stepped over are set to zero so no effort appears uninvited
 - [x] The cells are the *only* date control on a role row: clearing the box at either end shortens the row, collapsing past any zeros left behind by an earlier extension, so extending and undoing is an exact round trip
 - [x] Clearing a box inside a row returns that week to the row's default rather than shortening it — a week in the middle of a booking is still booked
+- [x] **A span is filled in one action.** The unit of work is "three days a week, weeks four to eleven", not one cell. Drag across cells, or click one and shift-click another, then type: every selected cell takes the value. Selection spans rows as well as weeks, so a whole block of the plan can be set at once
+- [x] A fill is **one edit and one undo step**, labelled by how many cells it covered
+- [x] A filled range is byte-identical to typing the same cells one at a time, extension and trimming rules included — asserted by test rather than by inspection, because a second implementation of the containment rules is how a plan starts disagreeing with itself
+- [x] Arrow keys move between cells, shift-arrows extend the selection, Escape collapses it. Left and right only leave the cell once the caret has run out of value, so a decimal can still be edited a character at a time
 - [x] Phase and workstream names and dates are editable in the grid, and the timeline is a view of the same fields rather than a second copy
 - [x] A phase contains its workstreams and a workstream contains its assignments, enforced in the engine after every edit, so the two views can never disagree
 - [x] Moving a workstream moves the team staffed on it, per-week overrides included

@@ -47,6 +47,19 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-20 — Filling a span, instead of a cell at a time
+**Reviewed:** `fillAllocationDays` in the engine, and range selection in the allocation grid.
+
+**The complaint was exact.** A resource plan is not built a week at a time. The real unit is "three days a week, weeks four to eleven" — one intent, previously eight separate edits and eight undo steps. That is the sort of friction that sends people back to Excel, so the grid borrows Excel's gesture rather than inventing one: drag across cells, or click one and shift-click another, then type a number once.
+
+**Selection is rectangular, so it spans rows too.** Three rows by four weeks is twelve cells filled in one action. The fill is one edit — the undo control reads *"Undo 8 cells"* — because a span is one decision, and coalescing is deliberately off: a run of keystrokes in a single box should collapse into one step, but two separate fills are two.
+
+**Folded over the per-cell function rather than reimplemented.** A filled range is byte-identical to typing the same cells one by one, extension and trimming included, and a test asserts exactly that. Doing it faster would have meant a second copy of the containment rules, and two implementations of a containment rule is how a plan starts disagreeing with itself. Clearing runs right to left, because trimming an edge shortens the row and moves the edge out from under the cells still to be cleared.
+
+**A false lead worth recording.** Drag selection appeared to be completely broken — zero cells selected, and instrumenting the page showed **zero mousedown events reaching any cell**. I had already changed the code once on a plausible theory (the browser's own text-selection drag capturing the pointer) before checking the simpler thing: my test drove raw mouse coordinates at an element below the fold. Playwright's `click()` scrolls into view and raw `mouse.move` does not, so shift-click passed and drag did not. The code had been working the whole time. The `preventDefault` I added first is still right on its own merits — it stops a text-drag artefact and selects the box contents so the next keystroke replaces rather than appends — but it was not a fix, and I should have instrumented before editing.
+
+**And one thing the screenshot caught that the test could not.** The selection rendered as a run of separately-rounded boxes rather than one range — technically correct, visually a mess, and directly contrary to the comment I had written above the CSS saying it should read as one block. It is now a single olive fill with one outline drawn round the rectangle, from per-cell edge flags.
+
 ### 2026-08-20 — Walking the workflow as the buyer, and cutting what did not serve it
 **Reviewed:** the whole app, walked as a Head of Consulting building an engagement from nothing through to a priced commercial model.
 

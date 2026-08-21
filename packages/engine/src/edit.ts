@@ -660,3 +660,45 @@ export function setWorkingDaysPerWeek(engagement: Engagement, days: number): Eng
 export function setPaymentTerms(engagement: Engagement, weeks: number): Engagement {
   return { ...engagement, paymentTermsWeeks: Math.max(0, Math.min(52, Math.round(weeks))) };
 }
+
+/**
+ * Fill a rectangle of the grid in one go.
+ *
+ * The unit of work in a resource plan is almost never a single week: it is "R. Kaur,
+ * three days a week, weeks four to eleven". Typing that a cell at a time is eight
+ * separate edits, eight undo steps, and the reason people go back to Excel.
+ *
+ * Folded over the same per-cell function the grid already uses, so a filled range is
+ * indistinguishable from the same cells typed one by one — including the rules that make
+ * typing outside a row's dates extend it, and clearing an edge cell shorten it. Doing it
+ * any faster would mean a second implementation of those rules, and two implementations
+ * of a containment rule is how a plan starts disagreeing with itself.
+ *
+ * The whole fill is a single edit, so one undo takes all of it back.
+ */
+export function fillAllocationDays(
+  engagement: Engagement,
+  assignmentIds: string[],
+  fromWeek: WeekIndex,
+  toWeek: WeekIndex,
+  days: number | null,
+): Engagement {
+  const first = Math.min(clampWeek(fromWeek), clampWeek(toWeek));
+  const last = Math.max(clampWeek(fromWeek), clampWeek(toWeek));
+  const known = new Set(engagement.assignments.map((assignment) => assignment.id));
+
+  let next = engagement;
+  for (const assignmentId of assignmentIds) {
+    if (!known.has(assignmentId)) continue;
+    // Clearing runs from the outside in. Trimming an edge cell shortens the row, so
+    // working left to right would move the edge out from under the cells still to be
+    // cleared and leave a tail of zeros behind.
+    const weeks: WeekIndex[] = [];
+    for (let week = first; week <= last; week++) weeks.push(week);
+    if (days == null) weeks.reverse();
+    for (const week of weeks) {
+      next = setAllocationDays(next, assignmentId, week, days);
+    }
+  }
+  return next;
+}

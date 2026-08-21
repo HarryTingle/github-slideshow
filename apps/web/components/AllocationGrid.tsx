@@ -6,6 +6,7 @@ import {
   addWorkstream,
   allocationToDays,
   contentsOf,
+  fillAllocationDays,
   formatDays,
   formatMoney,
   headerSpans,
@@ -28,7 +29,7 @@ import {
   type EffortLine,
   type Engagement,
 } from '@scope/engine';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ConfirmButton } from './ConfirmButton';
 import { useModel } from '@/lib/store';
 
@@ -43,13 +44,42 @@ import { useModel } from '@/lib/store';
  * Phase and workstream dates are edited here too, and the timeline above is a view of
  * the same fields — there is no second copy to keep in step. The containment rules live
  * in the engine (`edit.ts`), not in this component.
+ *
+ * ## Filling more than one cell
+ *
+ * A resource plan is not built a week at a time. The real unit is "three days a week,
+ * weeks four to eleven", and typing that cell by cell is what sends people back to
+ * Excel — so the grid borrows Excel's gesture rather than inventing one. Drag across
+ * cells, or click one and shift-click another, then type a number: every selected cell
+ * takes it, as one edit and one undo step. Arrow keys move, shift-arrows extend.
+ *
+ * Left and right arrows only jump cells once the caret is already at the end of the
+ * value, so "2.5" can still be edited a character at a time.
  */
 type Mode = 'allocation' | 'leave';
+
+interface Selection {
+  anchorRow: number;
+  anchorWeek: number;
+  focusRow: number;
+  focusWeek: number;
+}
 
 export function AllocationGrid() {
   const { stressed, analysis, update } = useModel();
   const [trace, setTrace] = useState<EffortLine | null>(null);
   const [mode, setMode] = useState<Mode>('allocation');
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const dragging = useRef(false);
+
+  // A drag can end anywhere, including outside the table.
+  useEffect(() => {
+    const stop = () => {
+      dragging.current = false;
+    };
+    window.addEventListener('mouseup', stop);
+    return () => window.removeEventListener('mouseup', stop);
+  }, []);
 
   const linesByCell = useMemo(() => {
     const map = new Map<string, EffortLine>();
@@ -70,6 +100,169 @@ export function AllocationGrid() {
 
   const columns = weeks.length + 1;
 
+  // Assignment ids in the order they are drawn, so a selection can run down the grid
+  // across phase and workstream headings without caring that they are there.
+  const rowOrder = useMemo(() => {
+    const ids: string[] = [];
+    for (const phase of phases) {
+      for (const workstream of stressed.workstreams.filter((ws) => ws.phaseId === phase.id)) {
+        for (const assignment of stressed.assignments.filter(
+          (candidate) => candidate.workstreamId === workstream.id,
+        )) {
+          ids.push(assignment.id);
+        }
+      }
+    }
+    return ids;
+  }, [phases, stressed.workstreams, stressed.assignments]);
+
+  const rect = selection && {
+    fromRow: Math.min(selection.anchorRow, selection.focusRow),
+    toRow: Math.max(selection.anchorRow, selection.focusRow),
+    fromWeek: Math.min(selection.anchorWeek, selection.focusWeek),
+    toWeek: Math.max(selection.anchorWeek, selection.focusWeek),
+  };
+  const selectedCells = rect
+    ? (rect.toRow - rect.fromRow + 1) * (rect.toWeek - rect.fromWeek + 1)
+    : 0;
+  const isSelected = (row: number, week: number) =>
+    rect != null &&
+    row >= rect.fromRow &&
+    row <= rect.toRow &&
+    week >= rect.fromWeek &&
+    week <= rect.toWeek;
+
+  /**
+   * Which sides of a selected cell sit on the edge of the selection.
+   *
+   * Drawn as one outline around the whole rectangle rather than a border on every cell:
+   * a filled span is a single act, and a run of individually-boxed cells reads as a
+   * mess of separate ones.
+   */
+  const selectionEdges = (row: number, week: number) =>
+    rect == null
+      ? null
+      : {
+          left: week === rect.fromWeek,
+          right: week === rect.toWeek,
+          top: row === rect.fromRow,
+          bottom: row === rect.toRow,
+        };
+
+  const focusCell = useCallback((row: number, week: number) => {
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLInputElement>(`[data-cell="${row}:${week}"]`);
+      el?.focus();
+      el?.select();
+    });
+  }, []);
+
+  const moveTo = useCallback(
+    (row: number, week: number, extend: boolean) => {
+      const nextRow = Math.max(0, Math.min(rowOrder.length - 1, row));
+      const nextWeek = Math.max(1, Math.min(stressed.weeks, week));
+      setSelection((previous) =>
+        extend && previous
+          ? { ...previous, focusRow: nextRow, focusWeek: nextWeek }
+          : { anchorRow: nextRow, anchorWeek: nextWeek, focusRow: nextRow, focusWeek: nextWeek },
+      );
+      focusCell(nextRow, nextWeek);
+    },
+    [rowOrder.length, stressed.weeks, focusCell],
+  );
+
+  /**
+   * One value, however many cells are selected.
+   *
+   * A fill is a single edit and deliberately not coalesced: a run of keystrokes in one
+   * box should collapse into one undo step, but two separate fills are two decisions.
+   */
+  const applyDays = useCallback(
+    (row: number, week: number, value: number | null) => {
+      const id = rowOrder[row];
+      if (!id) return;
+      if (rect && selectedCells > 1 && isSelected(row, week)) {
+        const ids = rowOrder.slice(rect.fromRow, rect.toRow + 1);
+        update(
+          (draft) => fillAllocationDays(draft, ids, rect.fromWeek, rect.toWeek, value),
+          { label: `${selectedCells} cells` },
+        );
+        return;
+      }
+      update((draft) => setAllocationDays(draft, id, week, value), {
+        label: 'the allocation',
+        coalesce: `cell:${id}:${week}`,
+      });
+    },
+    [rowOrder, rect, selectedCells, update],
+  );
+
+  const onCellKeyDown = useCallback(
+    (row: number, week: number, event: React.KeyboardEvent<HTMLInputElement>) => {
+      const input = event.currentTarget;
+      const atStart = (input.selectionStart ?? 0) === 0 && (input.selectionEnd ?? 0) === 0;
+      const atEnd =
+        (input.selectionStart ?? 0) === input.value.length &&
+        (input.selectionEnd ?? 0) === input.value.length;
+
+      switch (event.key) {
+        case 'ArrowUp':
+          event.preventDefault();
+          return moveTo(row - 1, week, event.shiftKey);
+        case 'ArrowDown':
+        case 'Enter':
+          event.preventDefault();
+          return moveTo(row + 1, week, event.shiftKey && event.key !== 'Enter');
+        case 'ArrowLeft':
+          // Only once the caret has run out of value to walk through.
+          if (!atStart && !event.shiftKey) return;
+          event.preventDefault();
+          return moveTo(row, week - 1, event.shiftKey);
+        case 'ArrowRight':
+          if (!atEnd && !event.shiftKey) return;
+          event.preventDefault();
+          return moveTo(row, week + 1, event.shiftKey);
+        case 'Escape':
+          event.preventDefault();
+          return setSelection({
+            anchorRow: row,
+            anchorWeek: week,
+            focusRow: row,
+            focusWeek: week,
+          });
+        default:
+      }
+    },
+    [moveTo],
+  );
+
+  const onCellMouseDown = useCallback(
+    (row: number, week: number, event: React.MouseEvent) => {
+      if (event.button !== 0) return;
+      // Pressing inside an input starts the browser's own text-selection drag, which
+      // captures the pointer — so no other cell ever sees a mouseenter and dragging
+      // across the grid selects nothing. Suppressing it means focusing the box
+      // ourselves, and selecting its contents so the next keystroke replaces the value
+      // rather than appending to it.
+      event.preventDefault();
+      dragging.current = true;
+      setSelection((previous) =>
+        event.shiftKey && previous
+          ? { ...previous, focusRow: row, focusWeek: week }
+          : { anchorRow: row, anchorWeek: week, focusRow: row, focusWeek: week },
+      );
+      focusCell(row, week);
+    },
+    [focusCell],
+  );
+
+  const onCellMouseEnter = useCallback((row: number, week: number) => {
+    if (!dragging.current) return;
+    setSelection((previous) =>
+      previous ? { ...previous, focusRow: row, focusWeek: week } : previous,
+    );
+  }, []);
+
   return (
     <>
       <div className="row gap-16 wrap" style={{ marginBottom: 14 }}>
@@ -82,14 +275,23 @@ export function AllocationGrid() {
           </button>
         </div>
         <span className="tiny muted">
-          {mode === 'allocation'
-            ? 'Days a week each role is booked for.'
-            : 'Days of leave booked, by person. Booking leave moves when it is taken, not how much of it there is — the allowance is already provided for.'}
+          {mode === 'allocation' ? (
+            selectedCells > 1 ? (
+              <strong style={{ color: 'var(--olive-800)' }}>
+                {selectedCells} cells selected — type a number to fill them all, or clear the box
+                to empty them
+              </strong>
+            ) : (
+              'Days a week each role is booked for. Drag across cells, or shift-click, to fill a whole span at once.'
+            )
+          ) : (
+            'Days of leave booked, by person. Booking leave moves when it is taken, not how much of it there is — the allowance is already provided for.'
+          )}
         </span>
       </div>
 
       <div className="table-scroll">
-        <table className="alloc">
+        <table className={`alloc${selectedCells > 1 ? ' selecting' : ''}`}>
           <thead>
             <tr className="r-quarter">
               <th className="rowhead" rowSpan={3}>
@@ -332,16 +534,23 @@ export function AllocationGrid() {
                                   <Cell
                                     key={week}
                                     week={week}
+                                    row={rowOrder.indexOf(assignment.id)}
                                     assignment={assignment}
                                     line={linesByCell.get(`${assignment.id}:${week}`)}
                                     workingDays={stressed.calendar.workingDaysPerWeek}
                                     sprintEdge={sprintStarts.has(week)}
+                                    selected={isSelected(rowOrder.indexOf(assignment.id), week)}
+                                    edges={
+                                      isSelected(rowOrder.indexOf(assignment.id), week)
+                                        ? selectionEdges(rowOrder.indexOf(assignment.id), week)
+                                        : null
+                                    }
                                     onTrace={setTrace}
+                                    onMouseDown={onCellMouseDown}
+                                    onMouseEnter={onCellMouseEnter}
+                                    onKeyDown={onCellKeyDown}
                                     onChange={(value) =>
-                                      update(
-                                        (draft) => setAllocationDays(draft, assignment.id, week, value),
-                                        { label: 'the allocation', coalesce: `cell:${assignment.id}:${week}` },
-                                      )
+                                      applyDays(rowOrder.indexOf(assignment.id), week, value)
                                     }
                                   />
                                 ),
@@ -405,6 +614,10 @@ export function AllocationGrid() {
       <div className="row gap-24 wrap tiny muted">
         <span className="row gap-6">
           <span style={{ color: 'var(--olive-800)', fontWeight: 600 }}>3</span> Per-week override
+        </span>
+        <span>
+          Drag or shift-click to select a span, then type once. Arrows move, shift-arrows extend,
+          Escape collapses.
         </span>
         <span>
           {mode === 'allocation' ? (
@@ -557,19 +770,31 @@ function tidy(value: number): string {
 
 function Cell({
   week,
+  row,
   assignment,
   line,
   workingDays,
   sprintEdge,
+  selected,
+  edges,
   onTrace,
+  onMouseDown,
+  onMouseEnter,
+  onKeyDown,
   onChange,
 }: {
   week: number;
+  row: number;
   assignment: Assignment;
   line?: EffortLine;
   workingDays: number;
   sprintEdge: boolean;
+  selected: boolean;
+  edges: { left: boolean; right: boolean; top: boolean; bottom: boolean } | null;
   onTrace: (line: EffortLine | null) => void;
+  onMouseDown: (row: number, week: number, event: React.MouseEvent) => void;
+  onMouseEnter: (row: number, week: number) => void;
+  onKeyDown: (row: number, week: number, event: React.KeyboardEvent<HTMLInputElement>) => void;
   onChange: (value: number | null) => void;
 }) {
   const inRange = week >= assignment.startWeek && week <= assignment.endWeek;
@@ -583,10 +808,30 @@ function Cell({
   const value = allocation == null ? '' : tidy(allocationToDays(allocation, workingDays));
 
   return (
-    <td className={`cell${sprintEdge ? ' sprint-edge' : ''}`}>
+    <td
+      className={`cell${sprintEdge ? ' sprint-edge' : ''}${selected ? ' selected' : ''}`}
+      style={
+        edges
+          ? {
+              boxShadow: [
+                edges.left ? 'inset 1px 0 0 var(--olive-600)' : null,
+                edges.right ? 'inset -1px 0 0 var(--olive-600)' : null,
+                edges.top ? 'inset 0 1px 0 var(--olive-600)' : null,
+                edges.bottom ? 'inset 0 -1px 0 var(--olive-600)' : null,
+              ]
+                .filter(Boolean)
+                .join(', '),
+            }
+          : undefined
+      }
+    >
       <div
         className="cellbox"
-        onMouseEnter={() => line && onTrace(line)}
+        onMouseDown={(event) => onMouseDown(row, week, event)}
+        onMouseEnter={() => {
+          onMouseEnter(row, week);
+          if (line) onTrace(line);
+        }}
         onMouseLeave={() => onTrace(null)}
         title={
           short
@@ -596,6 +841,8 @@ function Cell({
       >
         <input
           className={`cellinput${inRange ? '' : ' outside'}${override != null ? ' override' : ''}`}
+          data-cell={`${row}:${week}`}
+          onKeyDown={(event) => onKeyDown(row, week, event)}
           aria-label={`Days a week in week ${week}`}
           placeholder="·"
           value={value}

@@ -690,3 +690,15 @@ h4.lever-heading {
 .pill-fiction.own {
   background: var(--olive-100); color: var(--olive-800); border-color: var(--olive-200);
 }
+
+/* ---------- Grid selection ---------- */
+
+/*
+ * A filled span is the unit of work in a resource plan, so the selection has to read as
+ * one block rather than a run of separate highlighted boxes.
+ */
+.alloc td.cell.selected { background: var(--olive-100); }
+.alloc td.cell.selected input.cellinput { color: var(--olive-800); }
+.alloc td.cell.selected input.cellinput.outside { color: var(--olive-500); }
+.alloc.selecting { user-select: none; }
+.alloc .cellbox { cursor: cell; }
