@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FictionPill } from './bits';
-import { ResetButton } from './ResetButton';
+import { StartControls } from './StartControls';
 import { UndoControls } from './UndoControls';
 
 const NAV = [
@@ -25,7 +25,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </Link>
           <FictionPill />
           <UndoControls />
-          <ResetButton />
+          <StartControls />
           <nav className="nav">
             {NAV.map((item) => (
               <Link

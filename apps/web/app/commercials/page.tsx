@@ -66,22 +66,61 @@ export default function CommercialsPage() {
         <button onClick={fork}>Fork scenario</button>
       </div>
 
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="card-head">
+          <h3>Structure</h3>
+          <span className="card-note">
+            What kind of deal this is — decide it first; everything below prices it
+          </span>
+        </div>
+        <div className="card-body">
+          <div className="structure-row">
+            <div className="field">
+              <label htmlFor="scenario-name">Scenario name</label>
+              <input
+                id="scenario-name"
+                type="text"
+                value={selectedDefinition.name}
+                onChange={(event) =>
+                  update((draft: Engagement) => ({
+                    ...draft,
+                    scenarios: draft.scenarios.map((scenario) =>
+                      scenario.id === selectedDefinition.id
+                        ? { ...scenario, name: event.target.value }
+                        : scenario,
+                    ),
+                  }), { label: 'the scenario name', coalesce: `sc-name:${selectedDefinition.id}` })
+                }
+              />
+            </div>
+            <ScenarioEditor scenario={selectedDefinition} />
+            {stressed.scenarios.length > 1 && (
+              <button className="ghost tiny" onClick={() => remove(selectedDefinition.id)}>
+                Delete scenario
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       <PricingDesk />
 
       <FloorCard />
 
-      <LeaveDesk />
-
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="card-head">
-          <h3>Sensitivity</h3>
+          <h3>Levers</h3>
           <span className="card-note">
             {stressActive
-              ? 'Applied to every scenario below'
-              : 'What happens if the plan slips or the discount deepens'}
+              ? 'Stress applied — every figure on this page reflects it'
+              : 'What the team takes, and what happens if the deal goes badly'}
           </span>
         </div>
         <div className="card-body">
+          <h4 className="lever-heading">Leave the team takes</h4>
+          <LeaveDesk />
+          <div className="sep" />
+          <h4 className="lever-heading">If it goes badly</h4>
           <div className="grid cols-2 gap-24">
             <div className="field">
               <label>
@@ -127,181 +166,9 @@ export default function CommercialsPage() {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 18 }}>
-        <div className="card-head">
-          <h3>Comparison</h3>
-          <span className="card-note">
-            {analysis.plan.totalEffortDays.toFixed(1)} effort days ·{' '}
-            {formatMoney(selected.metrics.cost)} cost, unchanged throughout
-          </span>
-        </div>
-        <div className="card-body flush">
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Measure</th>
-                  {analysis.scenarios.map((entry) => (
-                    <th className="num" key={entry.scenario.scenarioId}>
-                      <span className="row gap-6" style={{ justifyContent: 'flex-end' }}>
-                        <span
-                          style={{
-                            width: 9,
-                            height: 9,
-                            borderRadius: 2,
-                            background: scenarioColour(stressed, entry.scenario.scenarioId),
-                            display: 'inline-block',
-                          }}
-                        />
-                        {entry.scenario.name}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <Row
-                  label="Structure"
-                  cells={analysis.scenarios.map((entry) =>
-                    entry.scenario.isHybrid
-                      ? `Hybrid · ${entry.scenario.parts.length} phases`
-                      : (entry.scenario.parts[0]?.structure.label ?? '—'),
-                  )}
-                />
-                <Row
-                  label="Revenue"
-                  cells={analysis.scenarios.map((entry) => formatMoney(entry.metrics.revenue))}
-                />
-                <Row
-                  label="Cost"
-                  cells={analysis.scenarios.map((entry) => formatMoney(entry.metrics.cost))}
-                />
-                <Row
-                  label="Gross margin"
-                  strong
-                  cells={analysis.scenarios.map((entry) => formatPct(entry.metrics.grossMarginPct))}
-                  tones={analysis.scenarios.map((entry) => MarginTone(entry.metrics.grossMarginPct))}
-                />
-                <Row
-                  label="Effective day rate"
-                  cells={analysis.scenarios.map((entry) => formatMoney(entry.metrics.effectiveRate))}
-                />
-                <Row
-                  label="Discount vs standard"
-                  cells={analysis.scenarios.map((entry) => formatPct(entry.metrics.discountVsStandardPct))}
-                />
-                <Row
-                  label="Max cash exposure"
-                  cells={analysis.scenarios.map((entry) => formatMoney(entry.metrics.maxCashExposure))}
-                />
-                <Row
-                  label="Break-even overrun"
-                  cells={analysis.scenarios.map((entry) =>
-                    entry.metrics.breakEvenOverrunPct == null
-                      ? 'n/a'
-                      : formatPct(entry.metrics.breakEvenOverrunPct, 0),
-                  )}
-                />
-                <Row
-                  label="Downside case"
-                  strong
-                  cells={analysis.scenarios.map(
-                    (entry) =>
-                      `${formatMoney(entry.scenario.downside.revenue)} · ${formatPct(entry.scenario.downside.marginPct)}`,
-                  )}
-                  tones={analysis.scenarios.map((entry) =>
-                    MarginTone(entry.scenario.downside.marginPct, 0.35),
-                  )}
-                />
-                <Row
-                  label="Upside case"
-                  cells={analysis.scenarios.map((entry) =>
-                    entry.scenario.upside
-                      ? `${formatMoney(entry.scenario.upside.revenue)} · ${formatPct(entry.scenario.upside.marginPct)}`
-                      : '—',
-                  )}
-                />
-                <tr>
-                  <td>Guardrails</td>
-                  {analysis.scenarios.map((entry) => {
-                    const breaches = entry.guardrails.filter((status) => status.breached);
-                    return (
-                      <td className="num" key={entry.scenario.scenarioId}>
-                        {breaches.length === 0 ? (
-                          <span className="badge good">
-                            <span className="dot" />
-                            Pass
-                          </span>
-                        ) : (
-                          <span className="badge breach">
-                            <span className="dot" />
-                            {breaches.length} breach{breaches.length === 1 ? '' : 'es'}
-                          </span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-                <tr>
-                  <td />
-                  {analysis.scenarios.map((entry) => (
-                    <td className="num" key={entry.scenario.scenarioId}>
-                      <button
-                        className="tiny"
-                        aria-pressed={entry.scenario.scenarioId === selectedScenarioId}
-                        onClick={() => setSelectedScenarioId(entry.scenario.scenarioId)}
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid cols-3">
-        <div className="card">
+      <div className="card">
           <div className="card-head">
-            <h3>Edit</h3>
-            <span className="card-note">{selectedDefinition.name}</span>
-          </div>
-          <div className="card-body">
-            <div className="field" style={{ marginBottom: 16 }}>
-              <label>Name</label>
-              <input
-                type="text"
-                value={selectedDefinition.name}
-                onChange={(event) =>
-                  update((draft: Engagement) => ({
-                    ...draft,
-                    scenarios: draft.scenarios.map((scenario) =>
-                      scenario.id === selectedDefinition.id
-                        ? { ...scenario, name: event.target.value }
-                        : scenario,
-                    ),
-                  }))
-                }
-              />
-            </div>
-            <ScenarioEditor scenario={selectedDefinition} />
-            {stressed.scenarios.length > 1 && (
-              <button
-                className="ghost tiny"
-                style={{ marginTop: 16 }}
-                onClick={() => remove(selectedDefinition.id)}
-              >
-                Delete this scenario
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="card" style={{ gridColumn: 'span 2' }}>
-          <div className="card-head">
-            <h3>{selected.scenario.name}</h3>
+            <h3>Where this scenario stands</h3>
             <span className="card-note">
               {selectedDefinition.notes ?? 'No note on this scenario'}
             </span>
@@ -399,7 +266,6 @@ export default function CommercialsPage() {
                 </table>
               </>
             )}
-          </div>
         </div>
       </div>
     </>
@@ -475,37 +341,6 @@ function CapBand({
         )}
       </span>
     </div>
-  );
-}
-
-function Row({
-  label,
-  cells,
-  tones,
-  strong,
-}: {
-  label: string;
-  cells: string[];
-  tones?: ('good' | 'warn' | 'breach')[];
-  strong?: boolean;
-}) {
-  const colourFor = (tone?: 'good' | 'warn' | 'breach') =>
-    tone === 'breach'
-      ? 'var(--status-breach)'
-      : tone === 'warn'
-        ? 'var(--status-warn)'
-        : tone === 'good'
-          ? 'var(--status-good)'
-          : undefined;
-  return (
-    <tr className={strong ? 'total' : undefined}>
-      <td>{label}</td>
-      {cells.map((cell, index) => (
-        <td className="num" key={index} style={{ color: colourFor(tones?.[index]) }}>
-          {cell}
-        </td>
-      ))}
-    </tr>
   );
 }
 

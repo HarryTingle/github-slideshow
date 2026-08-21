@@ -137,3 +137,67 @@ export function reconcileReferences(stored: Engagement, reference: ReferenceData
 
   return { engagement, notes, changed: notes.length > 0 };
 }
+
+/**
+ * A new, empty engagement — the starting point for a bid.
+ *
+ * Not literally empty. A model with no phase, no workstream and no row is a blank page
+ * with no affordance on it: there is nothing to click and nothing to type into, and the
+ * grid that is the heart of this app has no shape to render. So a new engagement arrives
+ * as the smallest thing that is already a plan — one phase, one workstream, one
+ * unstaffed role at the middle of the ladder — and every part of it is immediately
+ * editable. The first act is renaming, not creating.
+ *
+ * The practice's own ladder, capabilities, rates, leave allowance and guardrails come
+ * across whole. Those belong to the practice and are never invented per engagement.
+ */
+export function blankEngagement(
+  reference: ReferenceData,
+  options: { startDate: string; name?: string; client?: string; weeks?: number } = {
+    startDate: new Date().toISOString().slice(0, 10),
+  },
+): Engagement {
+  const { startDate, name = 'New engagement', client = '', weeks = 12 } = options;
+  const ladder = [...reference.grades].sort((a, b) => a.order - b.order);
+  // Mid-ladder rather than the cheapest grade: a placeholder that flatters the cost is
+  // worse than one that is merely wrong, because nobody checks a number that looks fine.
+  const grade = ladder[Math.floor(ladder.length / 2)] ?? ladder[0];
+  const role = reference.roles[0];
+
+  return {
+    id: `eng-${Date.now().toString(36)}`,
+    name,
+    client,
+    startDate,
+    weeks,
+    sprintWeeks: 2,
+    annualLeaveDays: reference.annualLeaveDays ?? 0,
+    calendar: { workingDaysPerWeek: 5 },
+    grades: reference.grades,
+    roles: reference.roles,
+    people: [],
+    phases: [{ id: 'ph-1', name: 'Phase 1', order: 1, startWeek: 1, endWeek: weeks }],
+    workstreams: [
+      { id: 'ws-1', name: 'Workstream 1', phaseId: 'ph-1', startWeek: 1, endWeek: weeks },
+    ],
+    milestones: [],
+    assignments:
+      grade && role
+        ? [
+            {
+              id: 'a-1',
+              workstreamId: 'ws-1',
+              roleId: role.id,
+              gradeId: grade.id,
+              startWeek: 1,
+              endWeek: weeks,
+              allocation: 1,
+            },
+          ]
+        : [],
+    rateCards: [],
+    paymentTermsWeeks: 4,
+    scenarios: [{ id: 'sc-1', name: 'Time & materials', structure: { type: 'tm' } }],
+    guardrails: reference.guardrails,
+  };
+}

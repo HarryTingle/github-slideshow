@@ -356,6 +356,39 @@ export function AllocationGrid() {
               );
             })}
           </tbody>
+          {/*
+            The team total, in the grid rather than in a chart next to it. It answers the
+            resourcing question — how many people, which week — in the same row-and-column
+            frame the numbers were typed into, so peak demand is read off the same object
+            it was created in rather than inferred from a bar chart alongside.
+          */}
+          <tfoot>
+            <tr className="totals-row">
+              <td className="rowhead">
+                <div className="rh">
+                  <span className="totals-label">Team, FTE</span>
+                  <span className="tiny muted">
+                    Peak {analysis.plan.peakHeadcount.toFixed(1)} in week {analysis.plan.peakWeek ?? '—'}
+                  </span>
+                </div>
+              </td>
+              {weeks.map((week) => {
+                const fte = analysis.plan.fteByWeek.get(week) ?? 0;
+                const peak = analysis.plan.peakHeadcount;
+                return (
+                  <td key={week} className={`cell${sprintStarts.has(week) ? ' sprint-edge' : ''}`}>
+                    <div className="cellbox totals-cell">
+                      <span
+                        className="totals-bar"
+                        style={{ height: peak > 0 ? `${Math.max(2, (fte / peak) * 22)}px` : '2px' }}
+                      />
+                      <span className={fte > 0 ? '' : 'muted'}>{fte > 0 ? fte.toFixed(1) : '·'}</span>
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          </tfoot>
         </table>
       </div>
 
@@ -370,10 +403,6 @@ export function AllocationGrid() {
 
       <div className="sep" />
       <div className="row gap-24 wrap tiny muted">
-        <span className="row gap-6">
-          <span style={{ width: 12, height: 12, background: 'var(--terracotta-100)', borderRadius: 3, display: 'inline-block' }} />
-          Reduced by holiday or leave
-        </span>
         <span className="row gap-6">
           <span style={{ color: 'var(--olive-800)', fontWeight: 600 }}>3</span> Per-week override
         </span>
@@ -591,7 +620,7 @@ function CellTrace({ line, engagement }: { line: EffortLine; engagement: Engagem
       <strong>Week {line.week}</strong> · {grade?.name} ·{' '}
       <code>
         {tidy(allocationToDays(line.allocation, engagement.calendar.workingDaysPerWeek))} days
-        booked of {line.availableDays} available
+        booked of {formatDays(line.availableDays, 2)} available
         {line.rampFactor < 1 ? ` × ${line.rampFactor.toFixed(2)} ramp` : ''} ={' '}
         {line.effortDays.toFixed(2)} delivered
       </code>

@@ -49,15 +49,8 @@ export function LeaveDesk() {
   };
 
   return (
-    <div className="card" style={{ marginBottom: 18 }}>
-      <div className="card-head">
-        <h3>Leave</h3>
-        <span className="card-note">
-          What the team is due, what the plan carries, and what it is worth
-        </span>
-      </div>
-
-      <div className="card-body">
+    <>
+      <div>
         <div className="leave-summary">
           <div className="desk-metric">
             <span className="k">Delivery days lost</span>
@@ -217,6 +210,6 @@ export function LeaveDesk() {
           delivery plan.
         </p>
       </div>
-    </div>
+    </>
   );
 }

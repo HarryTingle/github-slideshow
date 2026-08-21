@@ -637,3 +637,26 @@ export function setPersonLeaveAdjustment(
     ),
   };
 }
+
+/** Rename the engagement. Stored raw so a space can be typed mid-name. */
+export function setEngagementName(engagement: Engagement, name: string): Engagement {
+  return { ...engagement, name };
+}
+
+/** Who the work is for. Stored raw for the same reason. */
+export function setClient(engagement: Engagement, client: string): Engagement {
+  return { ...engagement, client };
+}
+
+/** Days a week the practice works. Rarely moved, but it is an assumption, not a constant. */
+export function setWorkingDaysPerWeek(engagement: Engagement, days: number): Engagement {
+  return {
+    ...engagement,
+    calendar: { ...engagement.calendar, workingDaysPerWeek: Math.max(1, Math.min(7, days)) },
+  };
+}
+
+/** Weeks between billing and cash landing. Drives the cash-exposure figure. */
+export function setPaymentTerms(engagement: Engagement, weeks: number): Engagement {
+  return { ...engagement, paymentTermsWeeks: Math.max(0, Math.min(52, Math.round(weeks))) };
+}

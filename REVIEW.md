@@ -47,6 +47,25 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-20 — Walking the workflow as the buyer, and cutting what did not serve it
+**Reviewed:** the whole app, walked as a Head of Consulting building an engagement from nothing through to a priced commercial model.
+
+**The finding that mattered most: you could not start.** There was no way to create an engagement, and nowhere to put its name or its client. Every model was permanently called *Data Platform & Demand Forecasting* for *Meridian Retail Group*. Four sessions of features on a product whose first step did not exist — and it went unnoticed because every session began with the seed already loaded.
+
+There is now **New**, which opens the smallest thing that is already a plan: one phase, one workstream, one unstaffed role at the middle of the ladder, twelve weeks from the next Monday. Not an empty document — an empty document is a blank page with nothing to click. The practice's ladder, capabilities, rates, leave allowance and guardrails come across whole, because those belong to the practice and are never invented per engagement. **Sample** puts the demonstration back.
+
+**An engagement header, because the first act is naming the thing.** Name and client are editable in place at the top of the delivery plan, with the timing controls beside them and the rarely-touched assumptions — sprint length, payment terms, the capacity basis — folded behind *More*. The Timeline card had been carrying the setup fields; it now carries only the timeline.
+
+**The worst redundancy was mine.** *Rates and leverage* and *The floor* each rendered the same seven grades with days, rate, cost rate and margin — two tables of the same rows, one under the other, added a session apart. There is now one table: the rates, with share of days, the target flag and the blended line folded in. The floor keeps the three numbers and the sentence that exist nowhere else.
+
+**Things that were said three times.** An unstaffed role appeared as orange text in the grid, as a stat above it, and as an info-level finding in a *Model checks* card. The card is gone; what remains is *Worth a look*, which appears only when something is actually wrong. *Demand by week* was a bar chart of what the grid already contained, so it is now a **team FTE row in the grid itself** — same information, read in the frame it was typed into, one card fewer. Guardrails and model checks are gone from the Overview, where nothing could be done about either.
+
+**Order that matched the work, not the build history.** *Structure* — what kind of deal this is — was a narrow box at the bottom of the commercials page, below every control that prices it. It is now first, because it is the first decision. *Leave* and *Sensitivity* are one card, *Levers*, since both answer "what if". *Comparison* moved to the Overview: comparing is a reviewing act, and a wall of four columns in the middle of the workbench put the levers a screen away from the result of pulling them.
+
+**Two bugs the walk exposed.** The cell trace printed `4.5576923076923075 available` — a raw float in front of a user, in the one place the app promises to explain its arithmetic. And the provenance pill still claimed *fictional engagement* on an engagement the user had just created themselves. A provenance marker that lies about provenance is worse than none, since it is the thing people rely on to know whether a figure can be quoted. It now reads *sample engagement* or *your engagement*.
+
+**Result:** the delivery plan went from 2,946px to 2,720px with the setup row and totals added, the commercials page from 3,556px to 2,781px, and both lost a card. On a blank engagement the plan is 1,195px — small enough to see the whole workflow at once.
+
 ### 2026-08-20 — The floor, and a grade priced under the practice's own bar
 **Reviewed:** `packages/engine/src/breakeven.ts` and the floor card on Commercials. Spec: `specs/0008-break-even-and-the-blended-floor.md`.
 

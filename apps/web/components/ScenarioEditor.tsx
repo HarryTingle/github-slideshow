@@ -101,8 +101,11 @@ export function ScenarioEditor({ scenario }: { scenario: Scenario }) {
   const structure = scenario.structure;
   const rateCardId = 'rateCardId' in structure ? structure.rateCardId : undefined;
 
+  // A wrapping row rather than a column. The editor used to sit in a narrow sidebar; it
+  // now sits at the top of the page as the first decision, where a row of controls reads
+  // as one settings line instead of a stack of unrelated boxes.
   return (
-    <div className="stack gap-16">
+    <div className="structure-fields">
       <div className="field">
         <label>Structure</label>
         <select

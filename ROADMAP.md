@@ -97,6 +97,7 @@ One model, three audiences. This is where the "no repeatable output" pain is kil
 
 ### Carried into M2/M3 as the app was used
 
+- [x] Start a new engagement from nothing, name it and say who it is for — the workflow had no first step
 - [x] Undo and redo across the model, with a run of keystrokes in one field as a single step
 - [x] History that survives a reload — and the double-push bug in undo that persisting it exposed
 

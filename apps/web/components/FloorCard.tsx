@@ -1,26 +1,23 @@
 'use client';
 
-import {
-  billedRatesFor,
-  breakEvenView,
-  computePlan,
-  formatDays,
-  formatMoney,
-  formatPct,
-} from '@scope/engine';
+import { billedRatesFor, breakEvenView, computePlan, formatDays, formatMoney, formatPct } from '@scope/engine';
 import { useMemo } from 'react';
 import { useModel } from '@/lib/store';
 
 /**
  * How low this deal can go.
  *
- * The pricing desk above answers *which lever is worth pulling*. This answers the
- * question asked immediately before a negotiation, and the one a bid team most often
- * guesses at: **what is the floor?**
+ * Three numbers and a sentence, and deliberately nothing else. It used to carry its own
+ * table of grades — days, rate, cost, margin — directly beneath the pricing desk's table
+ * of grades with days, rate, cost and margin. Two tables of the same seven rows on one
+ * screen is not thoroughness, it is a reader having to work out which one to trust. The
+ * mix now lives once, in the rates table above, with the share and the blended line
+ * folded into it.
  *
- * The headline is the deepest discount that still clears each bar — and it is stated as
- * a share of the price, not in points of margin, because that is the confusion this card
- * exists to end. A deal at 22% margin can give away 22% of its price. Not 22 points.
+ * What is left is the part that exists nowhere else: the deepest discount that still
+ * clears each bar, stated as a share of the price rather than in points of margin,
+ * because that is the confusion this card exists to end. A deal at 22% margin can give
+ * away 22% of its price. Not 22 points.
  */
 export function FloorCard() {
   const { stressed, analysis, selectedScenarioId, targetMarginPct } = useModel();
@@ -42,7 +39,10 @@ export function FloorCard() {
     <div className="card" style={{ marginBottom: 18 }}>
       <div className="card-head">
         <h3>The floor</h3>
-        <span className="card-note">How far this price can fall before it stops working</span>
+        <span className="card-note">
+          How far this price can fall before it stops working · the mix behind it is in the
+          table above
+        </span>
       </div>
 
       <div className="card-body">
@@ -104,66 +104,6 @@ export function FloorCard() {
           )}
         </div>
 
-        <div className="table-scroll">
-          <table className="leave-table">
-            <thead>
-              <tr>
-                <th>Grade</th>
-                <th className="num">Days</th>
-                <th className="num">Share</th>
-                <th className="num">Billed</th>
-                <th className="num">Cost</th>
-                <th className="num">Margin</th>
-                <th className="num">Of the blended rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.grades.map((line) => {
-                const under = (line.marginPct ?? 0) < view.targetMarginPct;
-                return (
-                  <tr key={line.gradeId}>
-                    <td>{line.name}</td>
-                    <td className="num muted">{formatDays(line.days)}</td>
-                    <td className="num muted">{formatPct(line.shareOfDays, 0)}</td>
-                    <td className="num">{formatMoney(line.chargeRate)}</td>
-                    <td className="num muted">{formatMoney(line.costRate)}</td>
-                    <td
-                      className="num"
-                      style={{ color: under ? 'var(--status-breach)' : 'var(--status-good)' }}
-                      title={
-                        under
-                          ? `A day of ${line.name} earns less than the ${targetPct} bar`
-                          : undefined
-                      }
-                    >
-                      {formatPct(line.marginPct)}
-                    </td>
-                    <td className="num muted">{formatMoney(line.contributionToBlended)}</td>
-                  </tr>
-                );
-              })}
-              <tr className="total">
-                <td>Blended</td>
-                <td className="num">{formatDays(view.effortDays)}</td>
-                <td className="num">100%</td>
-                <td className="num">{formatMoney(view.blendedRate)}</td>
-                <td className="num">{formatMoney(view.blendedCostRate)}</td>
-                <td className="num">{formatPct(view.marginPct)}</td>
-                <td className="num">{formatMoney(view.blendedRate)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {view.richest && view.leanest && view.richest.gradeId !== view.leanest.gradeId && (
-          <p className="tiny muted" style={{ margin: '12px 0 0' }}>
-            A day of <strong>{view.richest.name}</strong> earns{' '}
-            {formatPct(view.richest.marginPct)}; a day of <strong>{view.leanest.name}</strong>{' '}
-            earns {formatPct(view.leanest.marginPct)}. The blended rate is an output of the team
-            you put on the job, so the floor moves when the mix moves — the cost column is per
-            delivered day and excludes overhead, which the blended cost rate above carries.
-          </p>
-        )}
       </div>
     </div>
   );

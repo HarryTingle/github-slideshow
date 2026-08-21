@@ -3,6 +3,7 @@
 import {
   applyRateMultiplier,
   billedRatesFor,
+  breakEvenView,
   clearScenarioRates,
   computePlan,
   formatDays,
@@ -47,11 +48,18 @@ export function PricingDesk() {
   const definition =
     stressed.scenarios.find((s) => s.id === entry.scenario.scenarioId) ?? stressed.scenarios[0]!;
 
-  const { view, billed } = useMemo(() => {
+  const { view, billed, floor } = useMemo(() => {
     const billedRates = billedRatesFor(stressed, definition);
     const plan = computePlan(stressed, billedRates);
-    return { view: pricingView(stressed, definition, entry, plan), billed: billedRates };
-  }, [stressed, definition, entry]);
+    return {
+      view: pricingView(stressed, definition, entry, plan),
+      billed: billedRates,
+      // The mix and the blended totals come from the same place the floor does, so the
+      // two cards cannot disagree about what share of the days a grade carries.
+      floor: breakEvenView(stressed, entry, plan, targetMarginPct, billedRates),
+    };
+  }, [stressed, definition, entry, targetMarginPct]);
+  const shareOf = new Map(floor.grades.map((line) => [line.gradeId, line.shareOfDays]));
 
   const solution = solveForMargin(entry, view, target / 100);
   const margin = entry.metrics.grossMarginPct;
@@ -199,9 +207,9 @@ export function PricingDesk() {
                 <tr>
                   <th>Grade</th>
                   <th className="num">Days</th>
+                  <th className="num">Share</th>
                   <th className="num">Billed rate</th>
                   <th className="num">Cost rate</th>
-                  <th className="num">Revenue</th>
                   <th className="num">Margin</th>
                   <th className="num">+£25/day</th>
                   <th className="num">Move a week down</th>
@@ -211,7 +219,8 @@ export function PricingDesk() {
                 {view.grades.map((grade) => (
                   <tr key={grade.gradeId}>
                     <td style={{ color: 'var(--ink-900)' }}>{grade.name}</td>
-                    <td className="num">{formatDays(grade.days)}</td>
+                    <td className="num muted">{formatDays(grade.days)}</td>
+                    <td className="num muted">{formatPct(shareOf.get(grade.gradeId) ?? 0, 0)}</td>
                     <td className="num">
                       <span className="rate-cell">
                         <input
@@ -242,8 +251,22 @@ export function PricingDesk() {
                       </span>
                     </td>
                     <td className="num muted">{formatMoney(grade.costRate)}</td>
-                    <td className="num">{formatMoney(grade.revenue)}</td>
-                    <td className="num">{formatPct(grade.marginPct)}</td>
+                    <td
+                      className="num"
+                      style={{
+                        color:
+                          (grade.marginPct ?? 0) < targetMarginPct
+                            ? 'var(--status-breach)'
+                            : 'var(--status-good)',
+                      }}
+                      title={
+                        (grade.marginPct ?? 0) < targetMarginPct
+                          ? `A day of ${grade.name} earns less than the ${formatPct(targetMarginPct, 0)} target`
+                          : undefined
+                      }
+                    >
+                      {formatPct(grade.marginPct)}
+                    </td>
                     <td className="num">
                       <Lever value={grade.rateLeveragePp} max={maxLever} />
                     </td>
@@ -256,6 +279,22 @@ export function PricingDesk() {
                     </td>
                   </tr>
                 ))}
+                {/*
+                  The blended line, at the foot of the rates it is made of. A blended rate
+                  is an output of the mix above it, and putting it anywhere else invites
+                  the reader to treat it as a number somebody chose.
+                */}
+                <tr className="total">
+                  <td>Blended</td>
+                  <td className="num">{formatDays(floor.effortDays)}</td>
+                  <td className="num">100%</td>
+                  <td className="num">{formatMoney(floor.blendedRate)}</td>
+                  <td className="num">{formatMoney(floor.blendedCostRate)}</td>
+                  <td className="num">{formatPct(floor.marginPct)}</td>
+                  <td colSpan={2} className="num tiny muted">
+                    cost includes overhead; grade rows do not
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>

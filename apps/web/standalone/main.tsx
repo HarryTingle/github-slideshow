@@ -13,7 +13,7 @@ import Plan from '../app/plan/page';
 import Commercials from '../app/commercials/page';
 import Outputs from '../app/outputs/page';
 import { FictionPill } from '../components/bits';
-import { ResetButton } from '../components/ResetButton';
+import { StartControls } from '../components/StartControls';
 import { UndoControls } from '../components/UndoControls';
 
 const ROUTES = [
@@ -45,7 +45,7 @@ function App() {
           </a>
           <FictionPill />
           <UndoControls />
-          <ResetButton />
+          <StartControls />
           <nav className="nav">
             {ROUTES.map((entry) => (
               <a

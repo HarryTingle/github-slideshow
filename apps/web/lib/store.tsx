@@ -3,6 +3,7 @@
 import {
   analyse,
   applySensitivity,
+  blankEngagement,
   meridian,
   practiceReference,
   reconcileReferences,
@@ -34,7 +35,10 @@ interface ModelContextValue {
   sensitivity: Sensitivity;
   setSensitivity: (next: Sensitivity) => void;
   update: (mutate: (draft: Engagement) => Engagement, edit?: EditMeta) => void;
+  /** Discard everything and return to the seeded sample engagement. */
   reset: () => void;
+  /** Start a new engagement from nothing but the practice's own reference data. */
+  startBlank: () => void;
   undo: () => void;
   redo: () => void;
   /** What the next undo would take back, for the control's label. Null when there is none. */
@@ -286,6 +290,33 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
     setIsDirty(true);
   }, [applyDocument, applyPast, applyFuture]);
 
+  /**
+   * A fresh start.
+   *
+   * Deliberately clears the undo stack rather than making the old engagement recoverable
+   * through it. Undo is for taking back a keystroke, not for restoring a document you
+   * decided to abandon — a stray ctrl-Z resurrecting a different client's model would be
+   * far worse than having to press the button again.
+   */
+  const startBlank = useCallback(() => {
+    const monday = new Date();
+    monday.setDate(monday.getDate() + ((8 - monday.getDay()) % 7 || 7));
+    applyDocument(
+      blankEngagement(practiceReference, { startDate: monday.toISOString().slice(0, 10) }),
+    );
+    setSensitivity(NO_SENSITIVITY);
+    setReconciliation([]);
+    applyPast([]);
+    applyFuture([]);
+    lastEdit.current = { at: 0 };
+    setIsDirty(true);
+    try {
+      window.localStorage.removeItem(HISTORY_KEY);
+    } catch {
+      /* nothing to do */
+    }
+  }, [applyDocument, applyPast, applyFuture]);
+
   const reset = useCallback(() => {
     applyDocument(meridian);
     setSensitivity(NO_SENSITIVITY);
@@ -320,6 +351,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
       setSensitivity,
       update,
       reset,
+      startBlank,
       undo,
       redo,
       undoLabel: past[past.length - 1]?.label ?? null,
@@ -341,6 +373,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
       sensitivity,
       update,
       reset,
+      startBlank,
       undo,
       redo,
       past,
@@ -385,6 +418,7 @@ export function FrozenModelProvider({
       setSensitivity: noop,
       update: noop,
       reset: noop,
+      startBlank: noop,
       undo: noop,
       redo: noop,
       undoLabel: null,

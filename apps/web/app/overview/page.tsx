@@ -2,15 +2,16 @@
 
 import { formatDays, formatMoney, formatPct, weekStartLabel } from '@scope/engine';
 import { CashChart, CumulativeChart, RankBars } from '@/components/charts';
-import { Findings, GuardrailRow, MarginTone, Stat } from '@/components/bits';
+import { MarginTone, Stat } from '@/components/bits';
+import { ScenarioComparison } from '@/components/ScenarioComparison';
 import { useModel, useSelectedScenario } from '@/lib/store';
 
 export default function OverviewPage() {
   // Read-only by design. Overview reports the model; it never changes it, so every
   // number here can be trusted to be a consequence of a decision taken somewhere else.
-  const { stressed, analysis, findings } = useModel();
+  const { stressed, analysis } = useModel();
   const selected = useSelectedScenario();
-  const { metrics, scenario, guardrails, cash } = selected;
+  const { metrics, scenario, cash } = selected;
 
   const weekLabel = (week: number) =>
     `Week ${week} · ${weekStartLabel(stressed.startDate, week)}`;
@@ -100,6 +101,8 @@ export default function OverviewPage() {
         />
       </div>
 
+      <ScenarioComparison />
+
       <div className="grid cols-2" style={{ marginBottom: 18 }}>
         <div className="card">
           <div className="card-head">
@@ -145,29 +148,6 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        <div className="stack gap-16">
-          <div className="card">
-            <div className="card-head">
-              <h3>Guardrails</h3>
-              <span className="card-note">{scenario.name}</span>
-            </div>
-            <div className="card-body" style={{ paddingTop: 6, paddingBottom: 10 }}>
-              {guardrails.map((status) => (
-                <GuardrailRow key={status.guardrail.id} status={status} />
-              ))}
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-head">
-              <h3>Model checks</h3>
-              <span className="card-note">{findings.length} findings</span>
-            </div>
-            <div className="card-body" style={{ paddingTop: 4 }}>
-              <Findings findings={findings} />
-            </div>
-          </div>
-        </div>
       </div>
     </>
   );

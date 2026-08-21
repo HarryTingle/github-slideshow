@@ -1,6 +1,6 @@
 'use client';
 
-import { formatMoney, formatPct, type Finding, type GuardrailStatus } from '@scope/engine';
+import { formatMoney, formatPct, meridian, type Finding, type GuardrailStatus } from '@scope/engine';
 import { useModel } from '@/lib/store';
 
 export function Stat({
@@ -80,19 +80,30 @@ export function Findings({ findings }: { findings: Finding[] }) {
  * so the absolute figures are not either.
  */
 export function FictionPill() {
-  const { isDirty } = useModel();
+  const { engagement } = useModel();
+  // The marker has to track what is actually on screen. Once somebody starts their own
+  // engagement, calling it fictional is simply false — and a provenance marker that
+  // lies about provenance is worse than none, because it is the thing people rely on to
+  // know whether a figure can be quoted.
+  const sample = engagement.id === meridian.id;
+
   return (
     <span
-      className="pill-fiction"
+      className={`pill-fiction${sample ? '' : ' own'}`}
       title={
-        'Charge and cost rates are the practice’s real card, and annual leave is the ' +
-        'real 23-day allowance. Margin percentages are therefore real for a given ' +
-        'plan. The engagement is invented — Meridian Retail Group, the team, the ' +
-        'client rate card, the contract values and the guardrail thresholds are all ' +
-        'made up, so no absolute figure here may be quoted.'
+        sample
+          ? 'Charge and cost rates are the practice’s real card, and annual leave is the ' +
+            'real 23-day allowance. Margin percentages are therefore real for a given ' +
+            'plan. The engagement is invented — Meridian Retail Group, the team, the ' +
+            'client rate card, the contract values and the guardrail thresholds are all ' +
+            'made up, so no absolute figure here may be quoted.'
+          : 'The grade ladder, capabilities, charge and cost rates and the 23-day leave ' +
+            'allowance are the practice’s real reference data. The plan and the ' +
+            'commercials are yours. Guardrail thresholds are still placeholders — see ' +
+            'REVIEW Q5.'
       }
     >
-      Real rate card · fictional engagement{isDirty ? ' · edited' : ''}
+      {sample ? 'Real rate card · sample engagement' : 'Real rate card · your engagement'}
     </span>
   );
 }
