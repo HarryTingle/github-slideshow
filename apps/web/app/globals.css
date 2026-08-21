@@ -612,3 +612,12 @@ input.rate-input.adjust { width: 62px; text-align: center; }
 }
 .cap-band.binds { background: var(--status-breach-bg); border-left-color: var(--status-breach); }
 .cap-band .small { flex: 1; min-width: 260px; color: var(--ink-700); }
+
+/* ---------- The floor ---------- */
+
+.floor-headline {
+  background: var(--olive-050); border-left: 2px solid var(--olive-500);
+  padding: 10px 14px; font-size: 12.5px; color: var(--ink-700);
+  border-radius: 0 6px 6px 0; margin: 0 0 14px;
+}
+.floor-headline.tight { background: var(--status-breach-bg); border-left-color: var(--status-breach); }

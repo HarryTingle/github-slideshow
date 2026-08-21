@@ -15,7 +15,7 @@ import {
   solveForMargin,
   type Engagement,
 } from '@scope/engine';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useModel } from '@/lib/store';
 
 /**
@@ -34,8 +34,12 @@ import { useModel } from '@/lib/store';
  * all, and the only lever left is the shape of the team.
  */
 export function PricingDesk() {
-  const { stressed, analysis, update, selectedScenarioId } = useModel();
-  const [target, setTarget] = useState(25);
+  const { stressed, analysis, update, selectedScenarioId, targetMarginPct, setTargetMarginPct } =
+    useModel();
+  // Held as a whole number here because that is how the control reads; the store keeps
+  // the fraction, so the desk and the floor cannot drift apart.
+  const target = Math.round(targetMarginPct * 1000) / 10;
+  const setTarget = (pct: number) => setTargetMarginPct(pct / 100);
 
   const entry =
     analysis.scenarios.find((s) => s.scenario.scenarioId === selectedScenarioId) ??

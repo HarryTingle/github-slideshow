@@ -2,6 +2,7 @@
 
 import { formatMoney, formatPct, type Engagement } from '@scope/engine';
 import { GuardrailRow, MarginTone } from '@/components/bits';
+import { FloorCard } from '@/components/FloorCard';
 import { LeaveDesk } from '@/components/LeaveDesk';
 import { PricingDesk } from '@/components/PricingDesk';
 import { ScenarioEditor } from '@/components/ScenarioEditor';
@@ -66,6 +67,8 @@ export default function CommercialsPage() {
       </div>
 
       <PricingDesk />
+
+      <FloorCard />
 
       <LeaveDesk />
 

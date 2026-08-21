@@ -47,6 +47,23 @@ Work in this repo is judged against five questions. Anything that fails one is n
 
 Newest first. One entry per review. Use `routines/weekly-review.md`.
 
+### 2026-08-20 — The floor, and a grade priced under the practice's own bar
+**Reviewed:** `packages/engine/src/breakeven.ts` and the floor card on Commercials. Spec: `specs/0008-break-even-and-the-blended-floor.md`.
+
+**The gap this closed.** Every commercial structure built so far is a way of arranging revenue; none of them said where the bottom was. So "can we do 10% off?" was answered by intuition in the room — which is exactly what loses the margin the rest of the tool exists to protect.
+
+**The identity worth building a card around.** The deepest discount you can give **is** your current margin. A deal at 22% margin can give away 22% of its *price*. Not 22 points of margin. Those are different numbers, they are confused constantly, and the confusion is expensive — so the card names which one it means every time it says it, and a test asserts `discountToBreakEven === grossMarginPct` exactly.
+
+**What it immediately said about the seeded deal.** The T&M scenario looks healthy at 20.7% margin and has **0.9% of the price** — £2,130 on £249,260 — between it and the 20% guardrail. A deal with almost no negotiating room, which nothing on screen had previously shown. The fixed-price scenario has 2.5%.
+
+**And a finding in the mix.** On the client rate card, **Senior Consultant earns 19.4% — below the practice's own 20% bar — on 28% of the days in the plan.** The largest single block of days after Consultant is priced under the floor the practice wrote down for itself. That is precisely the kind of thing a blended figure hides and a mix table cannot.
+
+**Break-even carries overhead; the grade lines do not.** The blended cost rate is fully loaded — delivery plus non-billable effort and absorbed expenses — while a grade's margin is the rate card difference. Both are shown and the card says which is which, because treating them as comparable understates the floor by the whole of the overhead: £715 a day delivery against £762 all in.
+
+**One target, not two.** The pricing desk had a local target of 25% while the guardrail said 20%. Two controls disagreeing about what "target" means is worse than either alone, so it is now held once in the store and seeded from the practice's own gross-margin guardrail rather than an invented default.
+
+**Deliberately not built:** solving for a team shape that hits the target. Per-grade leverage is already on the pricing desk, and searching the space of mixes is probably a worse feature than showing a commercial lead the two numbers and letting them choose.
+
 ### 2026-08-20 — Undo survives a reload, and the bug that found
 **Reviewed:** history persistence in `apps/web/lib/store.tsx`, and cap status on capped T&M.
 

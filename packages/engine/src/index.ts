@@ -8,6 +8,7 @@ export * from './validate';
 export * from './edit';
 export * from './reference';
 export * from './pricing';
+export * from './breakeven';
 export * from './workbook';
 export * from './snapshot';
 export * from './leave';

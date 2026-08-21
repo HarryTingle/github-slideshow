@@ -67,8 +67,8 @@ The thing that wins bids. Same delivery plan, many commercial shapes, compared s
 - [x] Guardrails: thresholds with a plain-English explanation and a named approver
 - [x] Leave as a commercial lever — per-person entitlement, adjustment and margin effect, structure-aware. **Magnitude unproven until Q21** (is a cost rate built on billable days or working days?)
 - [x] Show cap status on a capped T&M deal — how much delivery goes unpaid, not just a percentage
-- [ ] Blended-rate break-even mix
-- [ ] Discount ladders (volume, term, strategic)
+- [x] Blended-rate break-even mix — the floor, the deepest discount that clears it, and the mix behind it (`specs/0008`)
+- [ ] Discount ladders (volume, term, strategic) — **wants Q5 first**: who signs off against what thresholds
 
 **Done when:** a Head of Commercial can take a finished delivery plan and produce three defensible commercial options in under ten minutes.
 

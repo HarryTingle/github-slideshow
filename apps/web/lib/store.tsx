@@ -46,8 +46,26 @@ interface ModelContextValue {
   isDirty: boolean;
   selectedScenarioId: string;
   setSelectedScenarioId: (id: string) => void;
+  /**
+   * The margin the practice is pricing towards, as a fraction.
+   *
+   * Shared across the page on purpose. The pricing desk solves for it and the floor is
+   * measured against it, and two controls that disagree about what "target" means would
+   * be worse than either alone. It starts from the gross-margin guardrail, because that
+   * is the bar the practice has already written down.
+   */
+  targetMarginPct: number;
+  setTargetMarginPct: (pct: number) => void;
   /** True when what is on screen is a frozen snapshot rather than the working model. */
   readOnly: boolean;
+}
+
+/** The practice's own gross-margin bar, where it has stated one. */
+export function guardrailTarget(engagement: Engagement): number {
+  const rail = engagement.guardrails.find(
+    (guardrail) => guardrail.metric === 'grossMarginPct' && guardrail.operator === 'gte',
+  );
+  return rail?.threshold ?? 0.2;
 }
 
 const ModelContext = createContext<ModelContextValue | null>(null);
@@ -101,6 +119,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
   const [sensitivity, setSensitivity] = useState<Sensitivity>(NO_SENSITIVITY);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>(meridian.scenarios[0]!.id);
   const [isDirty, setIsDirty] = useState(false);
+  const [target, setTarget] = useState<number>(() => guardrailTarget(meridian));
   const [hydrated, setHydrated] = useState(false);
   const [reconciliation, setReconciliation] = useState<string[]>([]);
   const [past, setPast] = useState<HistoryEntry[]>([]);
@@ -310,6 +329,8 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
       dismissReconciliation: () => setReconciliation([]),
       selectedScenarioId,
       setSelectedScenarioId,
+      targetMarginPct: target,
+      setTargetMarginPct: setTarget,
       readOnly: false,
     }),
     [
@@ -327,6 +348,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
       isDirty,
       reconciliation,
       selectedScenarioId,
+      target,
     ],
   );
 
@@ -374,6 +396,8 @@ export function FrozenModelProvider({
         ? scenarioId
         : (engagement.scenarios[0]?.id ?? scenarioId),
       setSelectedScenarioId: noop,
+      targetMarginPct: guardrailTarget(engagement),
+      setTargetMarginPct: noop,
       readOnly: true,
     };
   }, [engagement, scenarioId]);
