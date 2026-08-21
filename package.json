@@ -11,7 +11,8 @@
     "build": "npm run build --workspace=@scope/engine && npm run build --workspace=@scope/web",
     "test": "npm run test --workspace=@scope/engine",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "standalone": "npm run standalone --workspace=@scope/web"
+    "standalone": "npm run standalone --workspace=@scope/web",
+    "test:watch": "npm run test:watch --workspace=@scope/engine"
   },
   "devDependencies": {
     "playwright": "^1.62.1"
